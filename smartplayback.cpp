@@ -7,6 +7,7 @@
  */
 
 #include <znc/Modules.h>
+#include <znc/IRCNetwork.h>
 #include <znc/Client.h>
 #include <znc/Buffer.h>
 #include <znc/Chan.h>
@@ -18,22 +19,6 @@ class CSmartPlaybackMod : public CModule
 public:
     MODCONSTRUCTOR(CSmartPlaybackMod) { }
 
-    virtual bool OnLoad(const CString& sArgs, CString& sMessage)
-    {
-        m_mSince.clear();
-        return true;
-    }
-
-    virtual void OnClientLogin()
-    {
-        m_mSince.erase(GetClient());
-    }
-
-    virtual void OnClientDisconnect()
-    {
-        m_mSince.erase(GetClient());
-    }
-
     virtual void OnClientCapLs(CClient* pClient, SCString& ssCaps)
     {
         ssCaps.insert("znc.in/smartplayback");
@@ -44,14 +29,20 @@ public:
         return sCap.StartsWith("znc.in/smartplayback");
     }
 
-    virtual void OnClientCapRequest(CClient* pClient, const CString& sCap, bool bState)
+    virtual EModRet OnUserRaw(CString& sLine)
     {
-        if (sCap.StartsWith("znc.in/smartplayback/")) {
-            if (bState)
-                m_mSince[pClient] = sCap.TrimPrefix_n("znc.in/smartplayback/").ToLong();
-            else
-                m_mSince.erase(pClient);
+        CClient* pClient = GetClient();
+        CIRCNetwork* pNetwork = GetNetwork();
+        if (pClient && pNetwork && sLine.Token(0).Equals("PLAYBACK")) {
+            time_t iSince = sLine.Token(1).ToLong();
+            if (iSince > 0) {
+                const std::vector<CChan*>& vChans = pNetwork->GetChans();
+                for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it)
+                    PutBuffer(pClient, (*it), iSince);
+            }
+            return HALTCORE;
         }
+        return CONTINUE;
     }
 
     virtual EModRet OnChanBufferStarting(CChan& Chan, CClient& Client)
@@ -66,26 +57,13 @@ public:
 
     virtual EModRet OnChanBufferEnding(CChan& Chan, CClient& Client)
     {
-        VCString vsLines;
-        CBuffer Buffer = Chan.GetBuffer();
-        long lSince = GetSince(&Client);
-        for (size_t uIdx = 0; uIdx < Buffer.Size(); ++uIdx) {
-            CBufLine BufLine = Buffer.GetBufLine(uIdx);
-            if (lSince == 0 || BufLine.GetTime().tv_sec > lSince)
-                vsLines.push_back(BufLine.GetLine(Client, MCString::EmptyMap));
-        }
-        if (!vsLines.empty()) {
-            Client.PutClient(":***!znc@znc.in PRIVMSG " + Chan.GetName() + " :Buffer Playback...");
-            for (size_t uIdx = 0; uIdx < vsLines.size(); ++uIdx)
-                Client.PutClient(vsLines.at(uIdx));
-            Client.PutClient(":***!znc@znc.in PRIVMSG " + Chan.GetName() + " :Playback Complete.");
-        }
         return HALTCORE;
     }
 
     virtual EModRet OnSendToClient(CClient* pClient, CString& sLine)
     {
         if (pClient && pClient->IsAttached() && pClient->HasServerTime()) {
+            // TODO: proper handling for message tags (CUtils?)
             if (pClient->IsCapEnabled("znc.in/smartplayback") && sLine.StartsWith(":")) {
                 timeval tv;
                 if (gettimeofday(&tv, NULL) == -1) {
@@ -99,16 +77,26 @@ public:
     }
 
 private:
-    long GetSince(CClient* pClient) const
+    void PutBuffer(CClient* pClient, const CChan* pChan, time_t iSince = 0)
     {
-        long lSince = 0;
-        std::map<CClient*, long>::const_iterator it = m_mSince.find(pClient);
-        if (it != m_mSince.end())
-            lSince = it->second;
-        return lSince;
-    }
+        assert(pClient);
+        assert(pChan);
 
-    std::map<CClient*, long> m_mSince;
+        VCString vsLines;
+        const CBuffer& Buffer = pChan->GetBuffer();
+        for (size_t uIdx = 0; uIdx < Buffer.Size(); ++uIdx) {
+            const CBufLine& BufLine = Buffer.GetBufLine(uIdx);
+            if (iSince <= 0 || BufLine.GetTime().tv_sec > iSince)
+                vsLines.push_back(BufLine.GetLine(*pClient, MCString::EmptyMap));
+        }
+
+        if (!vsLines.empty()) {
+            pClient->PutClient(":***!znc@znc.in PRIVMSG " + pChan->GetName() + " :Buffer Playback...");
+            for (size_t uIdx = 0; uIdx < vsLines.size(); ++uIdx)
+                pClient->PutClient(vsLines.at(uIdx));
+            pClient->PutClient(":***!znc@znc.in PRIVMSG " + pChan->GetName() + " :Playback Complete.");
+        }
+    }
 };
 
 GLOBALMODULEDEFS(CSmartPlaybackMod, "A smart playback module for ZNC")
