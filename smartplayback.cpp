@@ -47,17 +47,23 @@ public:
 
     virtual EModRet OnChanBufferStarting(CChan& Chan, CClient& Client)
     {
-        return HALTCORE;
+        if (Client.IsCapEnabled("znc.in/smartplayback"))
+            return HALTCORE;
+        return CONTINUE;
     }
 
     virtual EModRet OnChanBufferPlayLine(CChan& Chan, CClient& Client, CString& sLine)
     {
-        return HALTCORE;
+        if (Client.IsCapEnabled("znc.in/smartplayback"))
+            return HALTCORE;
+        return CONTINUE;
     }
 
     virtual EModRet OnChanBufferEnding(CChan& Chan, CClient& Client)
     {
-        return HALTCORE;
+        if (Client.IsCapEnabled("znc.in/smartplayback"))
+            return HALTCORE;
+        return CONTINUE;
     }
 
     virtual EModRet OnSendToClient(CClient* pClient, CString& sLine)
