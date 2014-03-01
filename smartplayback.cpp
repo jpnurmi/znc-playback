@@ -34,9 +34,18 @@ public:
         CClient* pClient = GetClient();
         CIRCNetwork* pNetwork = GetNetwork();
         if (pClient && pNetwork && sLine.Token(0).Equals("PLAYBACK")) {
-            time_t iSince = sLine.Token(1).ToLong();
-            if (iSince > 0) {
-                const std::vector<CChan*>& vChans = pNetwork->GetChans();
+            // PLAYBACK <chan(s)> [timestamp]
+            SCString ssArgs;
+            sLine.Token(1).Split(",", ssArgs, false);
+
+            std::vector<CChan*> vChans;
+            for (SCString::const_iterator it = ssArgs.begin(); it != ssArgs.end(); ++it) {
+                std::vector<CChan*> vFound = FindChans(*it);
+                vChans.insert(vChans.end(), vFound.begin(), vFound.end());
+            }
+
+            if (!vChans.empty()) {
+                time_t iSince = sLine.Token(2).ToLong();
                 for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it)
                     PutBuffer(pClient, (*it), iSince);
             }
@@ -102,6 +111,20 @@ private:
                 pClient->PutClient(vsLines.at(uIdx));
             pClient->PutClient(":***!znc@znc.in PRIVMSG " + pChan->GetName() + " :Playback Complete.");
         }
+    }
+
+    std::vector<CChan*> FindChans(const CString& sWild)
+    {
+        std::vector<CChan*> vFound;
+        const CIRCNetwork *pNetwork = GetNetwork();
+        if (pNetwork) {
+            const std::vector<CChan*>& vChans = pNetwork->GetChans();
+            for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it) {
+                if ((*it)->GetName().WildCmp(sWild))
+                    vFound.push_back(*it);
+            }
+        }
+        return vFound;
     }
 };
 
