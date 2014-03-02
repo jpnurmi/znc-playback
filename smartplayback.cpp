@@ -80,14 +80,15 @@ public:
     virtual EModRet OnSendToClient(CClient* pClient, CString& sLine)
     {
         if (pClient && pClient->IsAttached() && pClient->HasServerTime()) {
-            // TODO: proper handling for message tags (CUtils?)
             if (pClient->IsCapEnabled(SmartPlaybackCap) && sLine.StartsWith(":")) {
+                MCString mssTags = GetMessageTags(sLine);
                 timeval tv;
                 if (gettimeofday(&tv, NULL) == -1) {
                     tv.tv_sec = time(NULL);
                     tv.tv_usec = 0;
                 }
-                sLine = CUtils::FormatServerTime(tv) + " " + sLine;
+                mssTags["time"] = CUtils::FormatServerTime(tv);
+                SetMessageTags(sLine, mssTags);
             }
         }
         return CONTINUE;
@@ -126,6 +127,36 @@ private:
                 vChans.push_back(*it);
         }
         return vChans;
+    }
+
+    static MCString GetMessageTags(const CString& sLine)
+    {
+        if (sLine.StartsWith("@")) {
+            VCString vsTags;
+            sLine.Token(0).TrimPrefix_n("@").Split(";", vsTags, false);
+
+            MCString mssTags;
+            for (VCString::const_iterator it = vsTags.begin(); it != vsTags.end(); ++it)
+                mssTags[(*it).Token(0, false, "=")] = (*it).Token(1, false, "=");
+            return mssTags;
+        }
+        return MCString::EmptyMap;
+    }
+
+    static void SetMessageTags(CString& sLine, const MCString& mssTags)
+    {
+        if (sLine.StartsWith("@"))
+            sLine.LeftChomp(sLine.Token(0).length() + 1);
+
+        if (!mssTags.empty()) {
+            CString sTags = "@";
+            for (MCString::const_iterator it = mssTags.begin(); it != mssTags.end(); ++it) {
+                if (sTags.size() > 1)
+                    sTags += ";";
+                sTags += it->first + "=" + it->second;
+            }
+            sLine = sTags + " " + sLine;
+        }
     }
 };
 
