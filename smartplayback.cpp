@@ -77,6 +77,8 @@ public:
         return CONTINUE;
     }
 
+    // #494: Add module hooks for raw client and server messages
+    // https://github.com/znc/znc/pull/494
     virtual EModRet OnSendToClient(CClient* pClient, CString& sLine)
     {
         if (pClient && pClient->IsAttached() && pClient->IsCapEnabled(SmartPlaybackCap)) {
@@ -93,6 +95,8 @@ public:
     }
 
 private:
+    // #502: CChan::SendBuffer(): allow specifying a time range
+    // https://github.com/znc/znc/pull/502
     static void SendBuffer(CChan* pChan, CClient* pClient, time_t from = 0, time_t to = -1)
     {
         assert(pChan);
@@ -115,6 +119,8 @@ private:
         }
     }
 
+    // #500: Add CIRCNetwork::FindChans()
+    // https://github.com/znc/znc/pull/500
     static std::vector<CChan*> FindChans(const CIRCNetwork* pNetwork, const CString& sWild)
     {
         assert(pNetwork);
@@ -128,6 +134,8 @@ private:
         return vChans;
     }
 
+    // #501: Add CUtils::Get/SetMessageTags()
+    // https://github.com/znc/znc/pull/501
     static MCString GetMessageTags(const CString& sLine)
     {
         if (sLine.StartsWith("@")) {
@@ -142,6 +150,8 @@ private:
         return MCString::EmptyMap;
     }
 
+    // #501: Add CUtils::Get/SetMessageTags()
+    // https://github.com/znc/znc/pull/501
     static void SetMessageTags(CString& sLine, const MCString& mssTags)
     {
         if (sLine.StartsWith("@"))
@@ -158,6 +168,8 @@ private:
         }
     }
 
+    // #493: Promote server-time formatting to Utils
+    // https://github.com/znc/znc/pull/493
     static CString FormatServerTime(const timeval& tv) {
         CString s_msec(tv.tv_usec / 1000);
         while (s_msec.length() < 3) {
