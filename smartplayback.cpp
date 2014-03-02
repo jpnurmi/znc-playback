@@ -68,9 +68,9 @@ public:
             }
 
             if (!vChans.empty()) {
-                time_t iSince = sLine.Token(2).ToLong();
+                time_t from = sLine.Token(2).ToLong();
                 for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it)
-                    PutBuffer(pClient, *it, iSince);
+                    SendBuffer(*it, pClient, from);
             }
             return HALTCORE;
         }
@@ -95,16 +95,17 @@ public:
     }
 
 private:
-    static void PutBuffer(CClient* pClient, const CChan* pChan, time_t iSince = 0)
+    static void SendBuffer(CChan* pChan, CClient* pClient, time_t from = 0, time_t to = -1)
     {
-        assert(pClient);
         assert(pChan);
+        assert(pClient);
 
         VCString vsLines;
         const CBuffer& Buffer = pChan->GetBuffer();
         for (size_t uIdx = 0; uIdx < Buffer.Size(); ++uIdx) {
             const CBufLine& BufLine = Buffer.GetBufLine(uIdx);
-            if (iSince <= 0 || BufLine.GetTime().tv_sec > iSince)
+            time_t stamp = BufLine.GetTime().tv_sec;
+            if (stamp >= from && (to < 0 || stamp <= to))
                 vsLines.push_back(BufLine.GetLine(*pClient, MCString::EmptyMap));
         }
 
