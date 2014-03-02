@@ -52,29 +52,37 @@ public:
         return CONTINUE;
     }
 
-    virtual EModRet OnUserRaw(CString& sLine)
+    virtual void OnModCommand(const CString& sLine)
     {
-        CClient* pClient = GetClient();
-        CIRCNetwork* pNetwork = GetNetwork();
-        if (pClient && pNetwork && sLine.Token(0).Equals("PLAYBACK")) {
-            // PLAYBACK <#chan(s)> [timestamp]
-            VCString vsArgs;
-            sLine.Token(1).Split(",", vsArgs, false);
-
-            std::vector<CChan*> vChans;
-            for (VCString::const_iterator it = vsArgs.begin(); it != vsArgs.end(); ++it) {
-                std::vector<CChan*> vFound = FindChans(pNetwork, *it);
-                vChans.insert(vChans.end(), vFound.begin(), vFound.end());
+        const CString sCommand = sLine.Token(0);
+        if (sCommand.Equals("HELP")) {
+            ShowHelp();
+        } else if (sCommand.Equals("PLAY")) {
+            // PLAY <#chan(s)> [timestamp]
+            const CString sArg = sLine.Token(1);
+            if (sArg.empty() || !sLine.Token(3).empty()) {
+                PutModule("Usage: Play <#chan(s)> [timestamp]");
+                return;
             }
-
-            if (!vChans.empty()) {
-                time_t from = sLine.Token(2).ToLong();
-                for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it)
-                    SendBuffer(*it, pClient, from);
+            std::vector<CChan*> vChans = GetChans(GetNetwork(), sArg);
+            time_t from = sLine.Token(2).ToLong();
+            for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it)
+                SendBuffer(*it, GetClient(), from);
+        } else if (sCommand.Equals("CLEAR")) {
+            // CLEAR <#chan(s)>
+            const CString sArg = sLine.Token(1);
+            if (sArg.empty() || !sLine.Token(2).empty()) {
+                PutModule("Usage: Clear <#chan(s)>");
+                return;
             }
-            return HALTCORE;
+            unsigned int uMatches = 0;
+            std::vector<CChan*> vChans = GetChans(GetNetwork(), sArg);
+            for (std::vector<CChan*>::iterator it = vChans.begin(); it != vChans.end(); ++it) {
+                (*it)->ClearBuffer();
+                ++uMatches;
+            }
+            PutModule("The playback buffer for [" + CString(uMatches) + "] channels matching [" + sLine.Token(1) + "] has been cleared.");
         }
-        return CONTINUE;
     }
 
     // #494: Add module hooks for raw client and server messages
@@ -97,27 +105,67 @@ public:
     }
 
 private:
+    void ShowHelp()
+    {
+        PutModule("Available commands:");
+        CTable Table;
+        Table.AddColumn("Command");
+        Table.AddColumn("Description");
+        Table.AddRow();
+        Table.SetCell("Command", "Clear <#chan(s)>");
+        Table.SetCell("Description", "Clear playback buffers for given channels.");
+        Table.AddRow();
+        Table.SetCell("Command", "Play <#chan(s)> [timestamp]");
+        Table.SetCell("Description", "Send playback buffers for given channels.");
+        PutModule(Table);
+        PutModule("Command arguments:");
+        Table.Clear();
+        Table.AddColumn("Argument");
+        Table.AddColumn("Description");
+        Table.AddRow();
+        Table.SetCell("Argument", "#chan(s)");
+        Table.SetCell("Description", "A comma-separated list of channels (supports wildcards).");
+        Table.AddRow();
+        Table.SetCell("Argument", "timestamp");
+        Table.SetCell("Description", "The number of seconds elapsed since January 1, 1970.");
+        PutModule(Table);
+    }
+
+    std::vector<CChan*> GetChans(CIRCNetwork* pNetwork, const CString& sArg)
+    {
+        std::vector<CChan*> vChans;
+        if (pNetwork) {
+            VCString vsArgs;
+            sArg.Split(",", vsArgs, false);
+
+            for (VCString::const_iterator it = vsArgs.begin(); it != vsArgs.end(); ++it) {
+                std::vector<CChan*> vFound = FindChans(pNetwork, *it);
+                vChans.insert(vChans.end(), vFound.begin(), vFound.end());
+            }
+        }
+        return vChans;
+    }
+
     // #502: CChan::SendBuffer(): allow specifying a time range
     // https://github.com/znc/znc/pull/502
     static void SendBuffer(CChan* pChan, CClient* pClient, time_t from = 0, time_t to = -1)
     {
-        assert(pChan);
-        assert(pClient);
+        if (pChan && pClient) {
+            VCString vsLines;
+            const CBuffer& Buffer = pChan->GetBuffer();
+            for (size_t uIdx = 0; uIdx < Buffer.Size(); ++uIdx) {
+                const CBufLine& BufLine = Buffer.GetBufLine(uIdx);
+                time_t stamp = BufLine.GetTime().tv_sec;
+                if (stamp >= from && (to < 0 || stamp <= to))
+                    vsLines.push_back(BufLine.GetLine(*pClient, MCString::EmptyMap));
+            }
 
-        VCString vsLines;
-        const CBuffer& Buffer = pChan->GetBuffer();
-        for (size_t uIdx = 0; uIdx < Buffer.Size(); ++uIdx) {
-            const CBufLine& BufLine = Buffer.GetBufLine(uIdx);
-            time_t stamp = BufLine.GetTime().tv_sec;
-            if (stamp >= from && (to < 0 || stamp <= to))
-                vsLines.push_back(BufLine.GetLine(*pClient, MCString::EmptyMap));
-        }
-
-        if (!vsLines.empty()) {
-            pClient->PutClient(":***!znc@znc.in PRIVMSG " + pChan->GetName() + " :Buffer Playback...");
-            for (size_t uIdx = 0; uIdx < vsLines.size(); ++uIdx)
-                pClient->PutClient(vsLines.at(uIdx));
-            pClient->PutClient(":***!znc@znc.in PRIVMSG " + pChan->GetName() + " :Playback Complete.");
+            if (!vsLines.empty()) {
+                pClient->PutClient(":***!znc@znc.in PRIVMSG " + pChan->GetName() + " :Buffer Playback...");
+                for (size_t uIdx = 0; uIdx < vsLines.size(); ++uIdx)
+                    pClient->PutClient(vsLines.at(uIdx));
+                pClient->PutClient(":***!znc@znc.in PRIVMSG " + pChan->GetName() + " :Playback Complete.");
+            }
         }
     }
 
