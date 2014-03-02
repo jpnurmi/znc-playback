@@ -1,13 +1,11 @@
-znc-smartplayback
-=================
-
-A smart playback module for ZNC
+An advanced playback module for ZNC
+===================================
 
 ### Overview
 
-The smart playback module makes it possible for IRC clients to avoid
-undesired repetitive buffer playback. IRC clients may request the module
-to send a partial buffer playback starting from a certain point of time.
+This ZNC module makes it possible for IRC clients to avoid undesired
+repetitive buffer playback. IRC clients may request the module to send
+a partial buffer playback starting from a certain point of time.
 
 ### Persistent buffers
 
@@ -22,18 +20,18 @@ or answer *no* to the following `znc --makeconf` question:
 The module implementation is based on the IRC v3.2 message tags [1] and
 server time [2] extensions. The module injects a server time tag to each
 message sent from ZNC to an IRC client that has requested the
-`znc.in/smartplayback` capability.
+`znc.in/playback` capability.
 
 - [1] http://ircv3.org/specification/message-tags-3.2
 - [2] http://ircv3.org/extensions/server-time-3.2
 
 ### Usage
 
-In order for an IRC client to support smart playback, it should request
-the `znc.in/smartplayback` capability and keep track of the latest server
-time of received messages. The syntax for a buffer playback request is:
+In order for an IRC client to support advanced playback, it should request
+the `znc.in/playback` capability and keep track of the latest server time
+of received messages. The syntax for a buffer playback request is:
 
-    PLAYBACK <#chan(s)> [<timestamp>] // TODO: /msg *smartplayback <args>
+    /msg *playback PLAY <#chan(s)> [<timestamp>]
 
 Where the first argument is a comma-separated list of channels (supports
 wildcards), and an optional second argument is number of seconds elapsed
@@ -43,7 +41,7 @@ When the IRC client connects to ZNC, it should request the module to send
 a buffer playback for all channels, starting from *0* (first connect) or
 the the timestamp of the latest received message (consecutive reconnects).
 
-    PLAYBACK * 0 // TODO: /msg *smartplayback <args>
+    /msg *playback * 0
 
 ### Work in progress
 
