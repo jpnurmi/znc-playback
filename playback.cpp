@@ -14,40 +14,40 @@
 #include <znc/znc.h>
 #include <sys/time.h>
 
-static const char* SmartPlaybackCap = "znc.in/smartplayback";
+static const char* PlaybackCap = "znc.in/playback";
 
-class CSmartPlaybackMod : public CModule
+class CPlaybackMod : public CModule
 {
 public:
-    MODCONSTRUCTOR(CSmartPlaybackMod) { }
+    MODCONSTRUCTOR(CPlaybackMod) { }
 
     virtual void OnClientCapLs(CClient* pClient, SCString& ssCaps)
     {
-        ssCaps.insert(SmartPlaybackCap);
+        ssCaps.insert(PlaybackCap);
     }
 
     virtual bool IsClientCapSupported(CClient* pClient, const CString& sCap, bool bState)
     {
-        return sCap.Equals(SmartPlaybackCap);
+        return sCap.Equals(PlaybackCap);
     }
 
     virtual EModRet OnChanBufferStarting(CChan& Chan, CClient& Client)
     {
-        if (Client.IsCapEnabled(SmartPlaybackCap))
+        if (Client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
 
     virtual EModRet OnChanBufferPlayLine(CChan& Chan, CClient& Client, CString& sLine)
     {
-        if (Client.IsCapEnabled(SmartPlaybackCap))
+        if (Client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
 
     virtual EModRet OnChanBufferEnding(CChan& Chan, CClient& Client)
     {
-        if (Client.IsCapEnabled(SmartPlaybackCap))
+        if (Client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
@@ -89,7 +89,7 @@ public:
     // https://github.com/znc/znc/pull/494
     virtual EModRet OnSendToClient(CClient* pClient, CString& sLine)
     {
-        if (pClient && pClient->IsAttached() && pClient->IsCapEnabled(SmartPlaybackCap)) {
+        if (pClient && pClient->IsAttached() && pClient->IsCapEnabled(PlaybackCap)) {
             MCString mssTags = GetMessageTags(sLine);
             if (mssTags.find("time") == mssTags.end()) {
                 timeval tv;
@@ -237,4 +237,4 @@ private:
     }
 };
 
-GLOBALMODULEDEFS(CSmartPlaybackMod, "A smart playback module for ZNC")
+GLOBALMODULEDEFS(CPlaybackMod, "An advanced playback module for ZNC")
