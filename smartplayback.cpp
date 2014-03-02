@@ -87,7 +87,7 @@ public:
                     tv.tv_sec = time(NULL);
                     tv.tv_usec = 0;
                 }
-                mssTags["time"] = CUtils::FormatServerTime(tv);
+                mssTags["time"] = FormatServerTime(tv);
                 SetMessageTags(sLine, mssTags);
             }
         }
@@ -157,6 +157,22 @@ private:
             }
             sLine = sTags + " " + sLine;
         }
+    }
+
+    static CString FormatServerTime(const timeval& tv) {
+        CString s_msec(tv.tv_usec / 1000);
+        while (s_msec.length() < 3) {
+            s_msec = "0" + s_msec;
+        }
+        // TODO support leap seconds properly
+        // TODO support message-tags properly
+        struct tm stm;
+        memset(&stm, 0, sizeof(stm));
+        const time_t secs = tv.tv_sec; // OpenBSD has tv_sec as int, so explicitly convert it to time_t to make gmtime_r() happy
+        gmtime_r(&secs, &stm);
+        char sTime[20] = {};
+        strftime(sTime, sizeof(sTime), "%Y-%m-%dT%H:%M:%S", &stm);
+        return CString(sTime) + "." + s_msec + "Z";
     }
 };
 
