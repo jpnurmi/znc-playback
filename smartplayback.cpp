@@ -79,17 +79,15 @@ public:
 
     virtual EModRet OnSendToClient(CClient* pClient, CString& sLine)
     {
-        if (pClient && pClient->IsAttached() && pClient->HasServerTime()) {
-            if (pClient->IsCapEnabled(SmartPlaybackCap) && sLine.StartsWith(":")) {
-                MCString mssTags = GetMessageTags(sLine);
-                timeval tv;
-                if (gettimeofday(&tv, NULL) == -1) {
-                    tv.tv_sec = time(NULL);
-                    tv.tv_usec = 0;
-                }
-                mssTags["time"] = FormatServerTime(tv);
-                SetMessageTags(sLine, mssTags);
+        if (pClient && pClient->IsAttached() && pClient->IsCapEnabled(SmartPlaybackCap)) {
+            timeval tv;
+            if (gettimeofday(&tv, NULL) == -1) {
+                tv.tv_sec = time(NULL);
+                tv.tv_usec = 0;
             }
+            MCString mssTags = GetMessageTags(sLine);
+            mssTags["time"] = FormatServerTime(tv);
+            SetMessageTags(sLine, mssTags);
         }
         return CONTINUE;
     }
