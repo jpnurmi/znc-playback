@@ -41,7 +41,15 @@ When the IRC client connects to ZNC, it should request the module to send
 a buffer playback for all channels, starting from *0* (first connect) or
 the the timestamp of the latest received message (consecutive reconnects).
 
-    /msg *playback * 0
+    /msg *playback PLAY * 0
+
+It is also possible to selectively clear playback buffers using the
+following command syntax:
+
+    /msg *playback CLEAR <#chan(s)>
+
+Where the command argument is a comma-separated list of channels (also
+supports wildcards).
 
 ### Work in progress
 
