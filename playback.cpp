@@ -181,4 +181,4 @@ private:
     }
 };
 
-USERMODULEDEFS(CPlaybackMod, "An advanced playback module for ZNC")
+GLOBALMODULEDEFS(CPlaybackMod, "An advanced playback module for ZNC")
