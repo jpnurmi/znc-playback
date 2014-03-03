@@ -89,8 +89,6 @@ public:
             SendBuffer(*it, GetClient(), from);
     }
 
-    // #494: Add module hooks for raw client and server messages
-    // https://github.com/znc/znc/pull/494
     virtual EModRet OnSendToClient(CString& sLine, CClient& Client)
     {
         if (Client.IsAttached() && Client.IsCapEnabled(PlaybackCap)) {

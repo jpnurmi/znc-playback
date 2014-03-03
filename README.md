@@ -53,18 +53,12 @@ following command syntax:
 Where the command argument is a comma-separated list of channels (also
 supports wildcards).
 
-### Work in progress
+### Supported IRC clients
 
-The module is still a work in progress. For the time being, the module
-depends on the following unmerged ZNC pull request:
-
-- Add module hooks for raw client and server messages (#494)
-  - https://github.com/znc/znc/pull/494
-
-Furthermore, as noted in previous section, an automatic buffer playback
-does not work out of the box, but requires special support from the IRC
-client wishing to use the functionality. A proof of concept implementation
-exists for the Textual IRC client for Mac OS X:
+As noted in the previous section, an automatic buffer playback does not
+work out of the box, but requires special support from the IRC client
+wishing to use the functionality. A proof of concept implementation exists
+for the Textual IRC client for Mac OS X:
 https://github.com/jpnurmi/Textual/commits/smartplayback.
 
 ### Contact
