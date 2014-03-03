@@ -20,7 +20,12 @@ static const char* PlaybackCap = "znc.in/playback";
 class CPlaybackMod : public CModule
 {
 public:
-    MODCONSTRUCTOR(CPlaybackMod) { }
+    MODCONSTRUCTOR(CPlaybackMod)
+    {
+        AddHelpCommand();
+        AddCommand("Clear", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ClearCommand), "<#chan(s)>", "Clears playback buffers for given channels.");
+        AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<#chan(s)> [timestamp]", "Send playback buffers for given channels.");
+    }
 
     virtual void OnClientCapLs(CClient* pClient, SCString& ssCaps)
     {
@@ -53,37 +58,35 @@ public:
         return CONTINUE;
     }
 
-    virtual void OnModCommand(const CString& sLine)
+    void ClearCommand(const CString& sLine)
     {
-        const CString sCommand = sLine.Token(0);
-        if (sCommand.Equals("HELP")) {
-            ShowHelp();
-        } else if (sCommand.Equals("PLAY")) {
-            // PLAY <#chan(s)> [timestamp]
-            const CString sArg = sLine.Token(1);
-            if (sArg.empty() || !sLine.Token(3).empty()) {
-                PutModule("Usage: Play <#chan(s)> [timestamp]");
-                return;
-            }
-            std::vector<CChan*> vChans = GetChans(GetNetwork(), sArg);
-            time_t from = sLine.Token(2).ToLong();
-            for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it)
-                SendBuffer(*it, GetClient(), from);
-        } else if (sCommand.Equals("CLEAR")) {
-            // CLEAR <#chan(s)>
-            const CString sArg = sLine.Token(1);
-            if (sArg.empty() || !sLine.Token(2).empty()) {
-                PutModule("Usage: Clear <#chan(s)>");
-                return;
-            }
-            unsigned int uMatches = 0;
-            std::vector<CChan*> vChans = GetChans(GetNetwork(), sArg);
-            for (std::vector<CChan*>::iterator it = vChans.begin(); it != vChans.end(); ++it) {
-                (*it)->ClearBuffer();
-                ++uMatches;
-            }
-            PutModule("The playback buffer for [" + CString(uMatches) + "] channels matching [" + sLine.Token(1) + "] has been cleared.");
+        // CLEAR <#chan(s)>
+        const CString sArg = sLine.Token(1);
+        if (sArg.empty() || !sLine.Token(2).empty()) {
+            PutModule("Usage: Clear <#chan(s)>");
+            return;
         }
+        unsigned int uMatches = 0;
+        std::vector<CChan*> vChans = GetChans(GetNetwork(), sArg);
+        for (std::vector<CChan*>::iterator it = vChans.begin(); it != vChans.end(); ++it) {
+            (*it)->ClearBuffer();
+            ++uMatches;
+        }
+        PutModule("The playback buffer for [" + CString(uMatches) + "] channels matching [" + sLine.Token(1) + "] has been cleared.");
+    }
+
+    void PlayCommand(const CString& sLine)
+    {
+        // PLAY <#chan(s)> [timestamp]
+        const CString sArg = sLine.Token(1);
+        if (sArg.empty() || !sLine.Token(3).empty()) {
+            PutModule("Usage: Play <#chan(s)> [timestamp]");
+            return;
+        }
+        std::vector<CChan*> vChans = GetChans(GetNetwork(), sArg);
+        time_t from = sLine.Token(2).ToLong();
+        for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it)
+            SendBuffer(*it, GetClient(), from);
     }
 
     // #494: Add module hooks for raw client and server messages
@@ -106,32 +109,6 @@ public:
     }
 
 private:
-    void ShowHelp()
-    {
-        PutModule("Available commands:");
-        CTable Table;
-        Table.AddColumn("Command");
-        Table.AddColumn("Description");
-        Table.AddRow();
-        Table.SetCell("Command", "Clear <#chan(s)>");
-        Table.SetCell("Description", "Clear playback buffers for given channels.");
-        Table.AddRow();
-        Table.SetCell("Command", "Play <#chan(s)> [timestamp]");
-        Table.SetCell("Description", "Send playback buffers for given channels.");
-        PutModule(Table);
-        PutModule("Command arguments:");
-        Table.Clear();
-        Table.AddColumn("Argument");
-        Table.AddColumn("Description");
-        Table.AddRow();
-        Table.SetCell("Argument", "#chan(s)");
-        Table.SetCell("Description", "A comma-separated list of channels (supports wildcards).");
-        Table.AddRow();
-        Table.SetCell("Argument", "timestamp");
-        Table.SetCell("Description", "The number of seconds elapsed since January 1, 1970.");
-        PutModule(Table);
-    }
-
     std::vector<CChan*> GetChans(CIRCNetwork* pNetwork, const CString& sArg)
     {
         std::vector<CChan*> vChans;
