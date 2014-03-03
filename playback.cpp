@@ -88,9 +88,9 @@ public:
 
     // #494: Add module hooks for raw client and server messages
     // https://github.com/znc/znc/pull/494
-    virtual EModRet OnSendToClient(CClient* pClient, CString& sLine)
+    virtual EModRet OnSendToClient(CClient& Client, CString& sLine)
     {
-        if (pClient && pClient->IsAttached() && pClient->IsCapEnabled(PlaybackCap)) {
+        if (Client.IsAttached() && Client.IsCapEnabled(PlaybackCap)) {
             MCString mssTags = CUtils::GetMessageTags(sLine);
             if (mssTags.find("time") == mssTags.end()) {
                 timeval tv;
