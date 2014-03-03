@@ -12,7 +12,10 @@ point of time.
 
 The module has been designed to be used together with persistent channel
 buffers. Either uncheck *Auto Clear Chan Buffer* (Your Settings -> Flags)
-using webadmin, or set *AutoClearChanBuffer* to *false* via *controlpanel.
+via webadmin, set disable `AutoClearChanBuffer` via \*controlpanel, or
+answer no to the following `znc --makeconf` question:
+
+    Would you like to clear channel buffers after replay? (yes/no): no
 
 ### Message tags
 
