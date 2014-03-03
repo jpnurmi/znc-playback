@@ -117,7 +117,7 @@ private:
             sArg.Split(",", vsArgs, false);
 
             for (VCString::const_iterator it = vsArgs.begin(); it != vsArgs.end(); ++it) {
-                std::vector<CChan*> vFound = FindChans(pNetwork, *it);
+                std::vector<CChan*> vFound = pNetwork->FindChans(*it);
                 vChans.insert(vChans.end(), vFound.begin(), vFound.end());
             }
         }
@@ -145,21 +145,6 @@ private:
                 pClient->PutClient(":***!znc@znc.in PRIVMSG " + pChan->GetName() + " :Playback Complete.");
             }
         }
-    }
-
-    // #500: Add CIRCNetwork::FindChans()
-    // https://github.com/znc/znc/pull/500
-    static std::vector<CChan*> FindChans(const CIRCNetwork* pNetwork, const CString& sWild)
-    {
-        assert(pNetwork);
-
-        std::vector<CChan*> vChans;
-        const std::vector<CChan*>& vAllChans = pNetwork->GetChans();
-        for (std::vector<CChan*>::const_iterator it = vAllChans.begin(); it != vAllChans.end(); ++it) {
-            if ((*it)->GetName().WildCmp(sWild))
-                vChans.push_back(*it);
-        }
-        return vChans;
     }
 
     // #493: Promote server-time formatting to Utils
