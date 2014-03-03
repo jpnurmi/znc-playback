@@ -10,6 +10,7 @@
 #include <znc/IRCNetwork.h>
 #include <znc/Client.h>
 #include <znc/Buffer.h>
+#include <znc/Utils.h>
 #include <znc/Chan.h>
 #include <znc/znc.h>
 #include <sys/time.h>
@@ -90,7 +91,7 @@ public:
     virtual EModRet OnSendToClient(CClient* pClient, CString& sLine)
     {
         if (pClient && pClient->IsAttached() && pClient->IsCapEnabled(PlaybackCap)) {
-            MCString mssTags = GetMessageTags(sLine);
+            MCString mssTags = CUtils::GetMessageTags(sLine);
             if (mssTags.find("time") == mssTags.end()) {
                 timeval tv;
                 if (gettimeofday(&tv, NULL) == -1) {
@@ -98,7 +99,7 @@ public:
                     tv.tv_usec = 0;
                 }
                 mssTags["time"] = FormatServerTime(tv);
-                SetMessageTags(sLine, mssTags);
+                CUtils::SetMessageTags(sLine, mssTags);
             }
         }
         return CONTINUE;
@@ -182,40 +183,6 @@ private:
                 vChans.push_back(*it);
         }
         return vChans;
-    }
-
-    // #501: Add CUtils::Get/SetMessageTags()
-    // https://github.com/znc/znc/pull/501
-    static MCString GetMessageTags(const CString& sLine)
-    {
-        if (sLine.StartsWith("@")) {
-            VCString vsTags;
-            sLine.Token(0).TrimPrefix_n("@").Split(";", vsTags, false);
-
-            MCString mssTags;
-            for (VCString::const_iterator it = vsTags.begin(); it != vsTags.end(); ++it)
-                mssTags[(*it).Token(0, false, "=")] = (*it).Token(1, false, "=");
-            return mssTags;
-        }
-        return MCString::EmptyMap;
-    }
-
-    // #501: Add CUtils::Get/SetMessageTags()
-    // https://github.com/znc/znc/pull/501
-    static void SetMessageTags(CString& sLine, const MCString& mssTags)
-    {
-        if (sLine.StartsWith("@"))
-            sLine.LeftChomp(sLine.Token(0).length() + 1);
-
-        if (!mssTags.empty()) {
-            CString sTags = "@";
-            for (MCString::const_iterator it = mssTags.begin(); it != mssTags.end(); ++it) {
-                if (sTags.size() > 1)
-                    sTags += ";";
-                sTags += it->first + "=" + it->second;
-            }
-            sLine = sTags + " " + sLine;
-        }
     }
 
     // #493: Promote server-time formatting to Utils
