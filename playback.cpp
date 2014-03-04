@@ -24,7 +24,7 @@ public:
     {
         AddHelpCommand();
         AddCommand("Clear", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ClearCommand), "<#chan(s)>", "Clears playback buffers for given channels.");
-        AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<#chan(s)> [timestamp]", "Send playback buffers for given channels.");
+        AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<#chan(s)>", "Send playback buffers for given channels.");
     }
 
     virtual void OnClientCapLs(CClient* pClient, SCString& ssCaps)
@@ -80,7 +80,7 @@ public:
         // PLAY <#chan(s)> [timestamp]
         const CString sArg = sLine.Token(1);
         if (sArg.empty() || !sLine.Token(3).empty()) {
-            PutModule("Usage: Play <#chan(s)> [timestamp]");
+            PutModule("Usage: Play <#chan(s)>");
             return;
         }
         double from = sLine.Token(2).ToDouble();
