@@ -24,7 +24,7 @@ public:
     {
         AddHelpCommand();
         AddCommand("Clear", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ClearCommand), "<#chan(s)>", "Clears playback buffers for given channels.");
-        AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<#chan(s)>", "Send playback buffers for given channels.");
+        AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<#chan(s)>", "Sends playback buffers for given channels.");
     }
 
     virtual void OnClientCapLs(CClient* pClient, SCString& ssCaps)
