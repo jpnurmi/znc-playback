@@ -93,7 +93,7 @@ public:
             for (size_t uIdx = 0; uIdx < Buffer.Size(); uIdx++) {
                 const CBufLine& Line = Buffer.GetBufLine(uIdx);
                 timeval tv = Line.GetTime();
-                if (from < 0 || from > tv.tv_sec + tv.tv_usec / 1000000.0)
+                if (from >= 0 && from < tv.tv_sec + tv.tv_usec / 1000000.0)
                     Lines.AddLine(Line.GetFormat(), Line.GetText(), &tv);
             }
             // #502: Add CChan::SendBuffer(client, buffer) overload
