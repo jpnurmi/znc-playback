@@ -83,10 +83,21 @@ public:
             PutModule("Usage: Play <#chan(s)> [timestamp]");
             return;
         }
+        double from = sLine.Token(2).ToDouble();
         std::vector<CChan*> vChans = GetChans(GetNetwork(), sArg);
-        time_t from = sLine.Token(2).ToLong();
-        for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it)
-            SendBuffer(*it, GetClient(), from);
+        for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it) {
+            const CBuffer& Buffer = (*it)->GetBuffer();
+            CBuffer Lines(Buffer.Size());
+            for (size_t uIdx = 0; uIdx < Buffer.Size(); uIdx++) {
+                const CBufLine& Line = Buffer.GetBufLine(uIdx);
+                timeval tv = Line.GetTime();
+                if (from < 0 || from > tv.tv_sec + tv.tv_usec / 1000000.0)
+                    Lines.AddLine(Line.GetFormat(), Line.GetText(), &tv);
+            }
+            // #502: Add CChan::SendBuffer(client, buffer) overload
+            // https://github.com/znc/znc/pull/502
+            (*it)->SendBuffer(GetClient(), Lines);
+        }
     }
 
     virtual EModRet OnSendToClient(CString& sLine, CClient& Client)
