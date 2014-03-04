@@ -22,9 +22,11 @@ class CPlaybackMod : public CModule
 public:
     MODCONSTRUCTOR(CPlaybackMod)
     {
+        m_bPlay = false;
         AddHelpCommand();
         AddCommand("Clear", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ClearCommand), "<#chan(s)>", "Clears playback buffers for given channels.");
-        AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<#chan(s)>", "Sends playback buffers for given channels.");
+        AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<#chan(s)> [timestamp]", "Sends playback buffers for given channels.");
+        AddCommand("Time", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::TimeCommand), "", "Tells the current server timestamp.");
     }
 
     virtual void OnClientCapLs(CClient* pClient, SCString& ssCaps)
@@ -39,21 +41,21 @@ public:
 
     virtual EModRet OnChanBufferStarting(CChan& Chan, CClient& Client)
     {
-        if (Client.IsCapEnabled(PlaybackCap))
+        if (!m_bPlay && Client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
 
     virtual EModRet OnChanBufferPlayLine(CChan& Chan, CClient& Client, CString& sLine)
     {
-        if (Client.IsCapEnabled(PlaybackCap))
+        if (!m_bPlay && Client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
 
     virtual EModRet OnChanBufferEnding(CChan& Chan, CClient& Client)
     {
-        if (Client.IsCapEnabled(PlaybackCap))
+        if (!m_bPlay && Client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
@@ -80,7 +82,7 @@ public:
         // PLAY <#chan(s)> [timestamp]
         const CString sArg = sLine.Token(1);
         if (sArg.empty() || !sLine.Token(3).empty()) {
-            PutModule("Usage: Play <#chan(s)>");
+            PutModule("Usage: Play <#chan(s)> [timestamp]");
             return;
         }
         double from = sLine.Token(2).ToDouble();
@@ -96,8 +98,21 @@ public:
             }
             // #502: Add CChan::SendBuffer(client, buffer) overload
             // https://github.com/znc/znc/pull/502
+            m_bPlay = true;
             (*it)->SendBuffer(GetClient(), Lines);
+            m_bPlay = false;
         }
+    }
+
+    void TimeCommand(const CString& sLine)
+    {
+        timeval tv;
+        if (gettimeofday(&tv, NULL) == -1) {
+            tv.tv_sec = time(NULL);
+            tv.tv_usec = 0;
+        }
+        double timestamp = tv.tv_sec + tv.tv_usec / 1000000.0;
+        PutModule("The current timestamp is [" + CString(timestamp) + "]");
     }
 
     virtual EModRet OnSendToClient(CString& sLine, CClient& Client)
@@ -155,6 +170,8 @@ private:
             }
         }
     }
+
+    bool m_bPlay;
 };
 
 GLOBALMODULEDEFS(CPlaybackMod, "An advanced playback module for ZNC")
