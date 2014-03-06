@@ -69,7 +69,7 @@ public:
             return;
         }
         unsigned int uMatches = 0;
-        std::vector<CChan*> vChans = GetChans(GetNetwork(), sArg);
+        std::vector<CChan*> vChans = FindChans(GetNetwork(), sArg);
         for (std::vector<CChan*>::iterator it = vChans.begin(); it != vChans.end(); ++it) {
             (*it)->ClearBuffer();
             ++uMatches;
@@ -86,7 +86,7 @@ public:
             return;
         }
         double from = sLine.Token(2).ToDouble();
-        std::vector<CChan*> vChans = GetChans(GetNetwork(), sArg);
+        std::vector<CChan*> vChans = FindChans(GetNetwork(), sArg);
         for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it) {
             const CBuffer& Buffer = (*it)->GetBuffer();
             CBuffer Lines(Buffer.Size());
@@ -131,7 +131,7 @@ public:
     }
 
 private:
-    std::vector<CChan*> GetChans(CIRCNetwork* pNetwork, const CString& sArg)
+    static std::vector<CChan*> FindChans(CIRCNetwork* pNetwork, const CString& sArg)
     {
         std::vector<CChan*> vChans;
         if (pNetwork) {
