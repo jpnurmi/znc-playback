@@ -96,8 +96,6 @@ public:
                 if (from >= 0 && from < tv.tv_sec + tv.tv_usec / 1000000.0)
                     Lines.AddLine(Line.GetFormat(), Line.GetText(), &tv);
             }
-            // #502: Add CChan::SendBuffer(client, buffer) overload
-            // https://github.com/znc/znc/pull/502
             m_bPlay = true;
             (*it)->SendBuffer(GetClient(), Lines);
             m_bPlay = false;
@@ -146,29 +144,6 @@ private:
             }
         }
         return vChans;
-    }
-
-    // #502: CChan::SendBuffer(): allow specifying a time range
-    // https://github.com/znc/znc/pull/502
-    static void SendBuffer(CChan* pChan, CClient* pClient, time_t from = 0, time_t to = -1)
-    {
-        if (pChan && pClient) {
-            VCString vsLines;
-            const CBuffer& Buffer = pChan->GetBuffer();
-            for (size_t uIdx = 0; uIdx < Buffer.Size(); ++uIdx) {
-                const CBufLine& BufLine = Buffer.GetBufLine(uIdx);
-                time_t stamp = BufLine.GetTime().tv_sec;
-                if (stamp >= from && (to < 0 || stamp <= to))
-                    vsLines.push_back(BufLine.GetLine(*pClient, MCString::EmptyMap));
-            }
-
-            if (!vsLines.empty()) {
-                pClient->PutClient(":***!znc@znc.in PRIVMSG " + pChan->GetName() + " :Buffer Playback...");
-                for (size_t uIdx = 0; uIdx < vsLines.size(); ++uIdx)
-                    pClient->PutClient(vsLines.at(uIdx));
-                pClient->PutClient(":***!znc@znc.in PRIVMSG " + pChan->GetName() + " :Playback Complete.");
-            }
-        }
     }
 
     bool m_bPlay;
