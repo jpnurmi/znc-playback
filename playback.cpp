@@ -104,11 +104,7 @@ public:
 
     void TimeCommand(const CString& sLine)
     {
-        timeval tv;
-        if (gettimeofday(&tv, NULL) == -1) {
-            tv.tv_sec = time(NULL);
-            tv.tv_usec = 0;
-        }
+        timeval tv = CurrentTime();
         double timestamp = tv.tv_sec + tv.tv_usec / 1000000.0;
         PutModule("The current timestamp is [" + CString(timestamp) + "]");
     }
@@ -118,12 +114,7 @@ public:
         if (Client.IsAttached() && Client.IsCapEnabled(PlaybackCap)) {
             MCString mssTags = CUtils::GetMessageTags(sLine);
             if (mssTags.find("time") == mssTags.end()) {
-                timeval tv;
-                if (gettimeofday(&tv, NULL) == -1) {
-                    tv.tv_sec = time(NULL);
-                    tv.tv_usec = 0;
-                }
-                mssTags["time"] = CUtils::FormatServerTime(tv);
+                mssTags["time"] = CUtils::FormatServerTime(CurrentTime());
                 CUtils::SetMessageTags(sLine, mssTags);
             }
         }
@@ -131,6 +122,16 @@ public:
     }
 
 private:
+    static timeval CurrentTime()
+    {
+        timeval tv;
+        if (gettimeofday(&tv, NULL) == -1) {
+            tv.tv_sec = time(NULL);
+            tv.tv_usec = 0;
+        }
+        return tv;
+    }
+
     static std::vector<CChan*> FindChans(CIRCNetwork* pNetwork, const CString& sArg)
     {
         std::vector<CChan*> vChans;
