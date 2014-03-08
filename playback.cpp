@@ -111,7 +111,7 @@ public:
 
     virtual EModRet OnSendToClient(CString& sLine, CClient& Client)
     {
-        if (Client.IsAttached() && Client.IsCapEnabled(PlaybackCap)) {
+        if (Client.IsAttached() && Client.IsCapEnabled(PlaybackCap) && !sLine.Token(0).Equals("CAP")) {
             MCString mssTags = CUtils::GetMessageTags(sLine);
             if (mssTags.find("time") == mssTags.end()) {
                 mssTags["time"] = CUtils::FormatServerTime(CurrentTime());
