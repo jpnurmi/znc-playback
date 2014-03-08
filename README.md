@@ -59,7 +59,7 @@ As noted in the previous section, an automatic buffer playback does not
 work out of the box, but requires special support from the IRC client
 wishing to use the functionality. A proof of concept implementation exists
 for the Textual IRC client for Mac OS X:
-https://github.com/jpnurmi/Textual/commits/smartplayback.
+https://github.com/jpnurmi/Textual/commits/playback.
 
 ### Contact
 
