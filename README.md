@@ -55,11 +55,10 @@ supports wildcards).
 
 ### Supported IRC clients
 
-As noted in the previous section, an automatic buffer playback does not
-work out of the box, but requires special support from the IRC client
-wishing to use the functionality. A proof of concept implementation exists
-for the Textual IRC client for Mac OS X:
-https://github.com/jpnurmi/Textual/commits/playback.
+* [Communi](https://github.com/communi/communi-desktop) for Mac OS X, Linux and Windows
+* [Communi for SailfishOS](https://github.com/communi/communi-sailfish)
+
+Furthermore, there's an open [pull request](https://github.com/Codeux/Textual/pull/452) for the Textual IRC client for Mac OS X.
 
 ### Contact
 
