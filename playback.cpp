@@ -92,7 +92,7 @@ public:
             CBuffer Lines(Buffer.Size());
             for (size_t uIdx = 0; uIdx < Buffer.Size(); uIdx++) {
                 const CBufLine& Line = Buffer.GetBufLine(uIdx);
-                timeval tv = Line.GetTime();
+                timeval tv = UniversalTime(Line.GetTime());
                 if (timestamp < tv.tv_sec + tv.tv_usec / 1000000.0)
                     Lines.AddLine(Line.GetFormat(), Line.GetText(), &tv);
             }
@@ -104,9 +104,9 @@ public:
 
     void TimeCommand(const CString& sLine)
     {
-        timeval tv = CurrentTime();
+        timeval tv = UniversalTime();
         double timestamp = tv.tv_sec + tv.tv_usec / 1000000.0;
-        PutModule("The current timestamp is [" + CString(timestamp) + "]");
+        PutModule("The current time is " + CUtils::CTime(tv.tv_sec, "UTC") + " UTC [" + CString(timestamp) + "]");
     }
 
     virtual EModRet OnSendToClient(CString& sLine, CClient& Client)
@@ -114,7 +114,8 @@ public:
         if (Client.IsAttached() && Client.IsCapEnabled(PlaybackCap) && !sLine.Token(0).Equals("CAP")) {
             MCString mssTags = CUtils::GetMessageTags(sLine);
             if (mssTags.find("time") == mssTags.end()) {
-                mssTags["time"] = CUtils::FormatServerTime(CurrentTime());
+                // CUtils::FormatServerTime() converts to UTC
+                mssTags["time"] = CUtils::FormatServerTime(LocalTime());
                 CUtils::SetMessageTags(sLine, mssTags);
             }
         }
@@ -122,13 +123,31 @@ public:
     }
 
 private:
-    static timeval CurrentTime()
+    static timeval LocalTime()
     {
         timeval tv;
         if (gettimeofday(&tv, NULL) == -1) {
             tv.tv_sec = time(NULL);
             tv.tv_usec = 0;
         }
+        return tv;
+    }
+
+    static timeval UniversalTime(timeval tv = LocalTime())
+    {
+        tm stm;
+        memset(&stm, 0, sizeof(stm));
+        const time_t secs = tv.tv_sec; // OpenBSD has tv_sec as int, so explicitly convert it to time_t to make gmtime_r() happy
+        gmtime_r(&secs, &stm);
+        const char* tz = getenv("TZ");
+        setenv("TZ", "UTC", 1);
+        tzset();
+        tv.tv_sec = mktime(&stm);
+        if (tz)
+            setenv("TZ", tz, 1);
+        else
+            unsetenv("TZ");
+        tzset();
         return tv;
     }
 
