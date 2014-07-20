@@ -11,6 +11,7 @@
 #include <znc/Client.h>
 #include <znc/Buffer.h>
 #include <znc/Utils.h>
+#include <znc/Query.h>
 #include <znc/Chan.h>
 #include <znc/znc.h>
 #include <sys/time.h>
@@ -24,8 +25,8 @@ public:
     {
         m_bPlay = false;
         AddHelpCommand();
-        AddCommand("Clear", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ClearCommand), "<#chan(s)>", "Clears playback buffers for given channels.");
-        AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<#chan(s)> [timestamp]", "Sends playback buffers for given channels.");
+        AddCommand("Clear", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ClearCommand), "<buffer(s)>", "Clears playback for given buffers.");
+        AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<buffer(s)> [timestamp]", "Sends playback for given buffers.");
         AddCommand("Time", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::TimeCommand), "", "Tells the current server timestamp.");
     }
 
@@ -60,12 +61,19 @@ public:
         return CONTINUE;
     }
 
+    virtual EModRet OnPrivBufferPlayLine(CClient& Client, CString& sLine)
+    {
+        if (!m_bPlay && Client.IsCapEnabled(PlaybackCap))
+            return HALTCORE;
+        return CONTINUE;
+    }
+
     void ClearCommand(const CString& sLine)
     {
-        // CLEAR <#chan(s)>
+        // CLEAR <buffer(s)>
         const CString sArg = sLine.Token(1);
         if (sArg.empty() || !sLine.Token(2).empty()) {
-            PutModule("Usage: Clear <#chan(s)>");
+            PutModule("Usage: Clear <buffer(s)>");
             return;
         }
         unsigned int uMatches = 0;
@@ -74,28 +82,33 @@ public:
             (*it)->ClearBuffer();
             ++uMatches;
         }
-        PutModule("The playback buffer for [" + CString(uMatches) + "] channels matching [" + sLine.Token(1) + "] has been cleared.");
+        std::vector<CQuery*> vQueries = FindQueries(GetNetwork(), sArg);
+        for (std::vector<CQuery*>::iterator it = vQueries.begin(); it != vQueries.end(); ++it) {
+            (*it)->ClearBuffer();
+            ++uMatches;
+        }
+        PutModule("The playback for [" + CString(uMatches) + "] buffers matching [" + sLine.Token(1) + "] has been cleared.");
     }
 
     void PlayCommand(const CString& sLine)
     {
-        // PLAY <#chan(s)> [timestamp]
+        // PLAY <buffer(s)> [timestamp]
         const CString sArg = sLine.Token(1);
         if (sArg.empty() || !sLine.Token(3).empty()) {
-            PutModule("Usage: Play <#chan(s)> [timestamp]");
+            PutModule("Usage: Play <buffer(s)> [timestamp]");
             return;
         }
         double timestamp = sLine.Token(2).ToDouble();
         std::vector<CChan*> vChans = FindChans(GetNetwork(), sArg);
         for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it) {
-            const CBuffer& Buffer = (*it)->GetBuffer();
-            CBuffer Lines(Buffer.Size());
-            for (size_t uIdx = 0; uIdx < Buffer.Size(); uIdx++) {
-                const CBufLine& Line = Buffer.GetBufLine(uIdx);
-                timeval tv = UniversalTime(Line.GetTime());
-                if (timestamp < tv.tv_sec + tv.tv_usec / 1000000.0)
-                    Lines.AddLine(Line.GetFormat(), Line.GetText(), &tv);
-            }
+            CBuffer Lines = GetLines((*it)->GetBuffer(), timestamp);
+            m_bPlay = true;
+            (*it)->SendBuffer(GetClient(), Lines);
+            m_bPlay = false;
+        }
+        std::vector<CQuery*> vQueries = FindQueries(GetNetwork(), sArg);
+        for (std::vector<CQuery*>::const_iterator it = vQueries.begin(); it != vQueries.end(); ++it) {
+            CBuffer Lines = GetLines((*it)->GetBuffer(), timestamp);
             m_bPlay = true;
             (*it)->SendBuffer(GetClient(), Lines);
             m_bPlay = false;
@@ -164,6 +177,33 @@ private:
             }
         }
         return vChans;
+    }
+
+    static std::vector<CQuery*> FindQueries(CIRCNetwork* pNetwork, const CString& sArg)
+    {
+        std::vector<CQuery*> vQueries;
+        if (pNetwork) {
+            VCString vsArgs;
+            sArg.Split(",", vsArgs, false);
+
+            for (VCString::const_iterator it = vsArgs.begin(); it != vsArgs.end(); ++it) {
+                std::vector<CQuery*> vFound = pNetwork->FindQueries(*it);
+                vQueries.insert(vQueries.end(), vFound.begin(), vFound.end());
+            }
+        }
+        return vQueries;
+    }
+
+    static CBuffer GetLines(const CBuffer& Buffer, double timestamp)
+    {
+        CBuffer Lines(Buffer.Size());
+        for (size_t uIdx = 0; uIdx < Buffer.Size(); uIdx++) {
+            const CBufLine& Line = Buffer.GetBufLine(uIdx);
+            timeval tv = UniversalTime(Line.GetTime());
+            if (timestamp < tv.tv_sec + tv.tv_usec / 1000000.0)
+                Lines.AddLine(Line.GetFormat(), Line.GetText(), &tv);
+        }
+        return Lines;
     }
 
     bool m_bPlay;
