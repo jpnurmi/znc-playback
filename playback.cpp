@@ -27,7 +27,6 @@ public:
         AddHelpCommand();
         AddCommand("Clear", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ClearCommand), "<buffer(s)>", "Clears playback for given buffers.");
         AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<buffer(s)> [timestamp]", "Sends playback for given buffers.");
-        AddCommand("Time", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::TimeCommand), "", "Tells the current server timestamp.");
     }
 
     virtual void OnClientCapLs(CClient* pClient, SCString& ssCaps)
@@ -72,32 +71,22 @@ public:
     {
         // CLEAR <buffer(s)>
         const CString sArg = sLine.Token(1);
-        if (sArg.empty() || !sLine.Token(2).empty()) {
-            PutModule("Usage: Clear <buffer(s)>");
+        if (sArg.empty() || !sLine.Token(2).empty())
             return;
-        }
-        unsigned int uMatches = 0;
         std::vector<CChan*> vChans = FindChans(GetNetwork(), sArg);
-        for (std::vector<CChan*>::iterator it = vChans.begin(); it != vChans.end(); ++it) {
+        for (std::vector<CChan*>::iterator it = vChans.begin(); it != vChans.end(); ++it)
             (*it)->ClearBuffer();
-            ++uMatches;
-        }
         std::vector<CQuery*> vQueries = FindQueries(GetNetwork(), sArg);
-        for (std::vector<CQuery*>::iterator it = vQueries.begin(); it != vQueries.end(); ++it) {
+        for (std::vector<CQuery*>::iterator it = vQueries.begin(); it != vQueries.end(); ++it)
             (*it)->ClearBuffer();
-            ++uMatches;
-        }
-        PutModule("The playback for [" + CString(uMatches) + "] buffers matching [" + sLine.Token(1) + "] has been cleared.");
     }
 
     void PlayCommand(const CString& sLine)
     {
         // PLAY <buffer(s)> [timestamp]
         const CString sArg = sLine.Token(1);
-        if (sArg.empty() || !sLine.Token(3).empty()) {
-            PutModule("Usage: Play <buffer(s)> [timestamp]");
+        if (sArg.empty() || !sLine.Token(3).empty())
             return;
-        }
         double timestamp = sLine.Token(2).ToDouble();
         std::vector<CChan*> vChans = FindChans(GetNetwork(), sArg);
         for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it) {
@@ -113,13 +102,6 @@ public:
             (*it)->SendBuffer(GetClient(), Lines);
             m_bPlay = false;
         }
-    }
-
-    void TimeCommand(const CString& sLine)
-    {
-        timeval tv = UniversalTime();
-        double timestamp = tv.tv_sec + tv.tv_usec / 1000000.0;
-        PutModule("The current time is " + CUtils::CTime(tv.tv_sec, "UTC") + " UTC [" + CString(timestamp) + "]");
     }
 
     virtual EModRet OnSendToClient(CString& sLine, CClient& Client)
