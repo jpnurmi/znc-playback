@@ -74,11 +74,11 @@ public:
         if (sArg.empty() || !sLine.Token(2).empty())
             return;
         std::vector<CChan*> vChans = FindChans(GetNetwork(), sArg);
-        for (std::vector<CChan*>::iterator it = vChans.begin(); it != vChans.end(); ++it)
-            (*it)->ClearBuffer();
+        for (CChan* pChan : vChans)
+            pChan->ClearBuffer();
         std::vector<CQuery*> vQueries = FindQueries(GetNetwork(), sArg);
-        for (std::vector<CQuery*>::iterator it = vQueries.begin(); it != vQueries.end(); ++it)
-            (*it)->ClearBuffer();
+        for (CQuery* pQuery : vQueries)
+            pQuery->ClearBuffer();
     }
 
     void PlayCommand(const CString& sLine)
@@ -89,17 +89,17 @@ public:
             return;
         double timestamp = sLine.Token(2).ToDouble();
         std::vector<CChan*> vChans = FindChans(GetNetwork(), sArg);
-        for (std::vector<CChan*>::const_iterator it = vChans.begin(); it != vChans.end(); ++it) {
-            CBuffer Lines = GetLines((*it)->GetBuffer(), timestamp);
+        for (CChan* pChan : vChans) {
+            CBuffer Lines = GetLines(pChan->GetBuffer(), timestamp);
             m_bPlay = true;
-            (*it)->SendBuffer(GetClient(), Lines);
+            pChan->SendBuffer(GetClient(), Lines);
             m_bPlay = false;
         }
         std::vector<CQuery*> vQueries = FindQueries(GetNetwork(), sArg);
-        for (std::vector<CQuery*>::const_iterator it = vQueries.begin(); it != vQueries.end(); ++it) {
-            CBuffer Lines = GetLines((*it)->GetBuffer(), timestamp);
+        for (CQuery* pQuery : vQueries) {
+            CBuffer Lines = GetLines(pQuery->GetBuffer(), timestamp);
             m_bPlay = true;
-            (*it)->SendBuffer(GetClient(), Lines);
+            pQuery->SendBuffer(GetClient(), Lines);
             m_bPlay = false;
         }
     }
@@ -153,8 +153,8 @@ private:
             VCString vsArgs;
             sArg.Split(",", vsArgs, false);
 
-            for (VCString::const_iterator it = vsArgs.begin(); it != vsArgs.end(); ++it) {
-                std::vector<CChan*> vFound = pNetwork->FindChans(*it);
+            for (const CString& sName : vsArgs) {
+                std::vector<CChan*> vFound = pNetwork->FindChans(sName);
                 vChans.insert(vChans.end(), vFound.begin(), vFound.end());
             }
         }
@@ -168,8 +168,8 @@ private:
             VCString vsArgs;
             sArg.Split(",", vsArgs, false);
 
-            for (VCString::const_iterator it = vsArgs.begin(); it != vsArgs.end(); ++it) {
-                std::vector<CQuery*> vFound = pNetwork->FindQueries(*it);
+            for (const CString& sName : vsArgs) {
+                std::vector<CQuery*> vFound = pNetwork->FindQueries(sName);
                 vQueries.insert(vQueries.end(), vFound.begin(), vFound.end());
             }
         }
