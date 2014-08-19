@@ -10,12 +10,14 @@ point of time.
 
 ### Persistent buffers
 
-The module has been designed to be used together with persistent channel
-buffers. Either uncheck *Auto Clear Chan Buffer* (Your Settings -> Flags)
-via webadmin, set disable `AutoClearChanBuffer` via \*controlpanel, or
-answer no to the following `znc --makeconf` question:
+The module has been designed to be used together with persistent buffers.
+Either uncheck *Auto Clear Chan Buffer* and *Auto Clear Query Buffer*
+(Your Settings -> Flags) via webadmin, disable `AutoClearChanBuffer` and
+`AutoClearQueryBuffer` via \*controlpanel, or answer no to the following
+`znc --makeconf` questions:
 
     Would you like to clear channel buffers after replay? (yes/no): no
+    Would you like to clear query buffers after replay? (yes/no): no
 
 ### Message tags
 
@@ -51,14 +53,15 @@ following command syntax:
     /msg *playback CLEAR <#chan(s)>
 
 Where the command argument is a comma-separated list of channels (also
-supports wildcards).
+supports wildcards). 
+
+See also http://wiki.znc.in/Query_buffers.
 
 ### Supported IRC clients
 
+* [Textual](http://textualapp.com) IRC client for Mac OS X
 * [Communi](https://github.com/communi/communi-desktop) for Mac OS X, Linux and Windows
 * [Communi for SailfishOS](https://github.com/communi/communi-sailfish)
-
-Furthermore, there's an open [pull request](https://github.com/Codeux/Textual/pull/452) for the Textual IRC client for Mac OS X.
 
 ### Contact
 
