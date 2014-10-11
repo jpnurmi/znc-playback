@@ -90,10 +90,12 @@ public:
         double timestamp = sLine.Token(2).ToDouble();
         std::vector<CChan*> vChans = FindChans(GetNetwork(), sArg);
         for (CChan* pChan : vChans) {
-            CBuffer Lines = GetLines(pChan->GetBuffer(), timestamp);
-            m_bPlay = true;
-            pChan->SendBuffer(GetClient(), Lines);
-            m_bPlay = false;
+            if (!pChan->IsDetached()) {
+                CBuffer Lines = GetLines(pChan->GetBuffer(), timestamp);
+                m_bPlay = true;
+                pChan->SendBuffer(GetClient(), Lines);
+                m_bPlay = false;
+            }
         }
         std::vector<CQuery*> vQueries = FindQueries(GetNetwork(), sArg);
         for (CQuery* pQuery : vQueries) {
