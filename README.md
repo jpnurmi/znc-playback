@@ -12,12 +12,8 @@ point of time.
 
 The module has been designed to be used together with persistent buffers.
 Either uncheck *Auto Clear Chan Buffer* and *Auto Clear Query Buffer*
-(Your Settings -> Flags) via webadmin, disable `AutoClearChanBuffer` and
-`AutoClearQueryBuffer` via \*controlpanel, or answer no to the following
-`znc --makeconf` questions:
-
-    Would you like to clear channel buffers after replay? (yes/no): no
-    Would you like to clear query buffers after replay? (yes/no): no
+(Your Settings -> Flags) via webadmin or disable `AutoClearChanBuffer` and
+`AutoClearQueryBuffer` via \*controlpanel.
 
 ### Message tags
 
