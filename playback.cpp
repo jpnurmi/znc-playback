@@ -90,7 +90,7 @@ public:
         double timestamp = sLine.Token(2).ToDouble();
         std::vector<CChan*> vChans = FindChans(GetNetwork(), sArg);
         for (CChan* pChan : vChans) {
-            if (!pChan->IsDetached()) {
+            if (pChan->IsOn() && !pChan->IsDetached()) {
                 CBuffer Lines = GetLines(pChan->GetBuffer(), timestamp);
                 m_bPlay = true;
                 pChan->SendBuffer(GetClient(), Lines);
