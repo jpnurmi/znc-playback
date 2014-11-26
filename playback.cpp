@@ -17,6 +17,7 @@
 #include <sys/time.h>
 
 static const char* PlaybackCap = "znc.in/playback";
+static const char* EchoMessageCap = "znc.in/echo-message";
 
 class CPlaybackMod : public CModule
 {
@@ -32,11 +33,12 @@ public:
     virtual void OnClientCapLs(CClient* pClient, SCString& ssCaps)
     {
         ssCaps.insert(PlaybackCap);
+        ssCaps.insert(EchoMessageCap);
     }
 
     virtual bool IsClientCapSupported(CClient* pClient, const CString& sCap, bool bState)
     {
-        return sCap.Equals(PlaybackCap);
+        return sCap.Equals(PlaybackCap) || sCap.Equals(EchoMessageCap);
     }
 
     virtual EModRet OnChanBufferStarting(CChan& Chan, CClient& Client)
@@ -115,6 +117,36 @@ public:
                 mssTags["time"] = CUtils::FormatServerTime(LocalTime());
                 CUtils::SetMessageTags(sLine, mssTags);
             }
+        }
+        return CONTINUE;
+    }
+
+    virtual EModRet OnUserMsg(CString& sTarget, CString& sMessage)
+    {
+        return EchoMessage("PRIVMSG " + sTarget + " :" + sMessage);
+    }
+
+    virtual EModRet OnUserNotice(CString& sTarget, CString& sMessage)
+    {
+        return EchoMessage("NOTICE " + sTarget + " :" + sMessage);
+    }
+
+    virtual EModRet OnUserAction(CString& sTarget, CString& sMessage)
+    {
+        return EchoMessage("PRIVMSG " + sTarget + " :\001 ACTION" + sMessage + "\001");
+    }
+
+    EModRet EchoMessage(CString sMessage)
+    {
+        CClient* pClient = GetClient();
+        if (pClient && pClient->IsCapEnabled(EchoMessageCap)) {
+            sMessage.insert(0, ":" + pClient->GetNickMask() + " ");
+            if (pClient->HasServerTime()) {
+                MCString mssTags = CUtils::GetMessageTags(sMessage);
+                mssTags["time"] = CUtils::FormatServerTime(LocalTime());
+                CUtils::SetMessageTags(sMessage, mssTags);
+            }
+            pClient->PutClient(sMessage);
         }
         return CONTINUE;
     }
