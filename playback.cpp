@@ -24,129 +24,129 @@ class CPlaybackMod : public CModule
 public:
     MODCONSTRUCTOR(CPlaybackMod)
     {
-        m_bPlay = false;
+        m_play = false;
         AddHelpCommand();
         AddCommand("Clear", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ClearCommand), "<buffer(s)>", "Clears playback for given buffers.");
         AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<buffer(s)> [timestamp]", "Sends playback for given buffers.");
     }
 
-    virtual void OnClientCapLs(CClient* pClient, SCString& ssCaps)
+    virtual void OnClientCapLs(CClient* client, SCString& caps)
     {
-        ssCaps.insert(PlaybackCap);
-        ssCaps.insert(EchoMessageCap);
+        caps.insert(PlaybackCap);
+        caps.insert(EchoMessageCap);
     }
 
-    virtual bool IsClientCapSupported(CClient* pClient, const CString& sCap, bool bState)
+    virtual bool IsClientCapSupported(CClient* client, const CString& cap, bool state)
     {
-        return sCap.Equals(PlaybackCap) || sCap.Equals(EchoMessageCap);
+        return cap.Equals(PlaybackCap) || cap.Equals(EchoMessageCap);
     }
 
-    virtual EModRet OnChanBufferStarting(CChan& Chan, CClient& Client)
+    virtual EModRet OnChanBufferStarting(CChan& chan, CClient& client)
     {
-        if (!m_bPlay && Client.IsCapEnabled(PlaybackCap))
+        if (!m_play && client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
 
-    virtual EModRet OnChanBufferPlayLine(CChan& Chan, CClient& Client, CString& sLine)
+    virtual EModRet OnChanBufferPlayLine(CChan& chan, CClient& client, CString& line)
     {
-        if (!m_bPlay && Client.IsCapEnabled(PlaybackCap))
+        if (!m_play && client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
 
-    virtual EModRet OnChanBufferEnding(CChan& Chan, CClient& Client)
+    virtual EModRet OnChanBufferEnding(CChan& chan, CClient& client)
     {
-        if (!m_bPlay && Client.IsCapEnabled(PlaybackCap))
+        if (!m_play && client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
 
-    virtual EModRet OnPrivBufferPlayLine(CClient& Client, CString& sLine)
+    virtual EModRet OnPrivBufferPlayLine(CClient& client, CString& line)
     {
-        if (!m_bPlay && Client.IsCapEnabled(PlaybackCap))
+        if (!m_play && client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
 
-    void ClearCommand(const CString& sLine)
+    void ClearCommand(const CString& line)
     {
         // CLEAR <buffer(s)>
-        const CString sArg = sLine.Token(1);
-        if (sArg.empty() || !sLine.Token(2).empty())
+        const CString arg = line.Token(1);
+        if (arg.empty() || !line.Token(2).empty())
             return;
-        std::vector<CChan*> vChans = FindChans(GetNetwork(), sArg);
-        for (CChan* pChan : vChans)
-            pChan->ClearBuffer();
-        std::vector<CQuery*> vQueries = FindQueries(GetNetwork(), sArg);
-        for (CQuery* pQuery : vQueries)
-            pQuery->ClearBuffer();
+        std::vector<CChan*> chans = FindChans(GetNetwork(), arg);
+        for (CChan* chan : chans)
+            chan->ClearBuffer();
+        std::vector<CQuery*> queries = FindQueries(GetNetwork(), arg);
+        for (CQuery* query : queries)
+            query->ClearBuffer();
     }
 
-    void PlayCommand(const CString& sLine)
+    void PlayCommand(const CString& line)
     {
         // PLAY <buffer(s)> [timestamp]
-        const CString sArg = sLine.Token(1);
-        if (sArg.empty() || !sLine.Token(3).empty())
+        const CString arg = line.Token(1);
+        if (arg.empty() || !line.Token(3).empty())
             return;
-        double timestamp = sLine.Token(2).ToDouble();
-        std::vector<CChan*> vChans = FindChans(GetNetwork(), sArg);
-        for (CChan* pChan : vChans) {
-            if (pChan->IsOn() && !pChan->IsDetached()) {
-                CBuffer Lines = GetLines(pChan->GetBuffer(), timestamp);
-                m_bPlay = true;
-                pChan->SendBuffer(GetClient(), Lines);
-                m_bPlay = false;
+        double timestamp = line.Token(2).ToDouble();
+        std::vector<CChan*> chans = FindChans(GetNetwork(), arg);
+        for (CChan* chan : chans) {
+            if (chan->IsOn() && !chan->IsDetached()) {
+                CBuffer lines = GetLines(chan->GetBuffer(), timestamp);
+                m_play = true;
+                chan->SendBuffer(GetClient(), lines);
+                m_play = false;
             }
         }
-        std::vector<CQuery*> vQueries = FindQueries(GetNetwork(), sArg);
-        for (CQuery* pQuery : vQueries) {
-            CBuffer Lines = GetLines(pQuery->GetBuffer(), timestamp);
-            m_bPlay = true;
-            pQuery->SendBuffer(GetClient(), Lines);
-            m_bPlay = false;
+        std::vector<CQuery*> queries = FindQueries(GetNetwork(), arg);
+        for (CQuery* query : queries) {
+            CBuffer lines = GetLines(query->GetBuffer(), timestamp);
+            m_play = true;
+            query->SendBuffer(GetClient(), lines);
+            m_play = false;
         }
     }
 
-    virtual EModRet OnSendToClient(CString& sLine, CClient& Client)
+    virtual EModRet OnSendToClient(CString& line, CClient& client)
     {
-        if (Client.IsAttached() && Client.IsCapEnabled(PlaybackCap) && !sLine.Token(0).Equals("CAP")) {
-            MCString mssTags = CUtils::GetMessageTags(sLine);
-            if (mssTags.find("time") == mssTags.end()) {
+        if (client.IsAttached() && client.IsCapEnabled(PlaybackCap) && !line.Token(0).Equals("CAP")) {
+            MCString tags = CUtils::GetMessageTags(line);
+            if (tags.find("time") == tags.end()) {
                 // CUtils::FormatServerTime() converts to UTC
-                mssTags["time"] = CUtils::FormatServerTime(LocalTime());
-                CUtils::SetMessageTags(sLine, mssTags);
+                tags["time"] = CUtils::FormatServerTime(LocalTime());
+                CUtils::SetMessageTags(line, tags);
             }
         }
         return CONTINUE;
     }
 
-    virtual EModRet OnUserMsg(CString& sTarget, CString& sMessage)
+    virtual EModRet OnUserMsg(CString& target, CString& message)
     {
-        return EchoMessage("PRIVMSG " + sTarget + " :" + sMessage);
+        return EchoMessage("PRIVMSG " + target + " :" + message);
     }
 
-    virtual EModRet OnUserNotice(CString& sTarget, CString& sMessage)
+    virtual EModRet OnUserNotice(CString& target, CString& message)
     {
-        return EchoMessage("NOTICE " + sTarget + " :" + sMessage);
+        return EchoMessage("NOTICE " + target + " :" + message);
     }
 
-    virtual EModRet OnUserAction(CString& sTarget, CString& sMessage)
+    virtual EModRet OnUserAction(CString& target, CString& message)
     {
-        return EchoMessage("PRIVMSG " + sTarget + " :\001 ACTION" + sMessage + "\001");
+        return EchoMessage("PRIVMSG " + target + " :\001 ACTION" + message + "\001");
     }
 
-    EModRet EchoMessage(CString sMessage)
+    EModRet EchoMessage(CString message)
     {
-        CClient* pClient = GetClient();
-        if (pClient && pClient->IsCapEnabled(EchoMessageCap)) {
-            sMessage.insert(0, ":" + pClient->GetNickMask() + " ");
-            if (pClient->HasServerTime()) {
-                MCString mssTags = CUtils::GetMessageTags(sMessage);
-                mssTags["time"] = CUtils::FormatServerTime(LocalTime());
-                CUtils::SetMessageTags(sMessage, mssTags);
+        CClient* client = GetClient();
+        if (client && client->IsCapEnabled(EchoMessageCap)) {
+            message.insert(0, ":" + client->GetNickMask() + " ");
+            if (client->HasServerTime()) {
+                MCString tags = CUtils::GetMessageTags(message);
+                tags["time"] = CUtils::FormatServerTime(LocalTime());
+                CUtils::SetMessageTags(message, tags);
             }
-            pClient->PutClient(sMessage);
+            client->PutClient(message);
         }
         return CONTINUE;
     }
@@ -180,49 +180,49 @@ private:
         return tv;
     }
 
-    static std::vector<CChan*> FindChans(CIRCNetwork* pNetwork, const CString& sArg)
+    static std::vector<CChan*> FindChans(CIRCNetwork* network, const CString& arg)
     {
-        std::vector<CChan*> vChans;
-        if (pNetwork) {
-            VCString vsArgs;
-            sArg.Split(",", vsArgs, false);
+        std::vector<CChan*> chans;
+        if (network) {
+            VCString vargs;
+            arg.Split(",", vargs, false);
 
-            for (const CString& sName : vsArgs) {
-                std::vector<CChan*> vFound = pNetwork->FindChans(sName);
-                vChans.insert(vChans.end(), vFound.begin(), vFound.end());
+            for (const CString& name : vargs) {
+                std::vector<CChan*> found = network->FindChans(name);
+                chans.insert(chans.end(), found.begin(), found.end());
             }
         }
-        return vChans;
+        return chans;
     }
 
-    static std::vector<CQuery*> FindQueries(CIRCNetwork* pNetwork, const CString& sArg)
+    static std::vector<CQuery*> FindQueries(CIRCNetwork* network, const CString& arg)
     {
-        std::vector<CQuery*> vQueries;
-        if (pNetwork) {
-            VCString vsArgs;
-            sArg.Split(",", vsArgs, false);
+        std::vector<CQuery*> queries;
+        if (network) {
+            VCString vargs;
+            arg.Split(",", vargs, false);
 
-            for (const CString& sName : vsArgs) {
-                std::vector<CQuery*> vFound = pNetwork->FindQueries(sName);
-                vQueries.insert(vQueries.end(), vFound.begin(), vFound.end());
+            for (const CString& name : vargs) {
+                std::vector<CQuery*> found = network->FindQueries(name);
+                queries.insert(queries.end(), found.begin(), found.end());
             }
         }
-        return vQueries;
+        return queries;
     }
 
-    static CBuffer GetLines(const CBuffer& Buffer, double timestamp)
+    static CBuffer GetLines(const CBuffer& buffer, double timestamp)
     {
-        CBuffer Lines(Buffer.Size());
-        for (size_t uIdx = 0; uIdx < Buffer.Size(); uIdx++) {
-            const CBufLine& Line = Buffer.GetBufLine(uIdx);
-            timeval tv = UniversalTime(Line.GetTime());
+        CBuffer lines(buffer.Size());
+        for (size_t i = 0; i < buffer.Size(); ++i) {
+            const CBufLine& line = buffer.GetBufLine(i);
+            timeval tv = UniversalTime(line.GetTime());
             if (timestamp < tv.tv_sec + tv.tv_usec / 1000000.0)
-                Lines.AddLine(Line.GetFormat(), Line.GetText(), &tv);
+                lines.AddLine(line.GetFormat(), line.GetText(), &tv);
         }
-        return Lines;
+        return lines;
     }
 
-    bool m_bPlay;
+    bool m_play;
 };
 
 GLOBALMODULEDEFS(CPlaybackMod, "An advanced playback module for ZNC")
