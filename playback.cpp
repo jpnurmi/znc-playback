@@ -136,6 +136,7 @@ public:
         return EchoMessage("PRIVMSG " + target + " :\001 ACTION" + message + "\001");
     }
 
+private:
     EModRet EchoMessage(CString message)
     {
         CClient* client = GetClient();
@@ -151,7 +152,6 @@ public:
         return CONTINUE;
     }
 
-private:
     static timeval LocalTime()
     {
         timeval tv;
