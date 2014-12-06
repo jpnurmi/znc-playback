@@ -30,39 +30,39 @@ public:
         AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<buffer(s)> [timestamp]", "Sends playback for given buffers.");
     }
 
-    virtual void OnClientCapLs(CClient* client, SCString& caps)
+    void OnClientCapLs(CClient* client, SCString& caps) override
     {
         caps.insert(PlaybackCap);
         caps.insert(EchoMessageCap);
     }
 
-    virtual bool IsClientCapSupported(CClient* client, const CString& cap, bool state)
+    bool IsClientCapSupported(CClient* client, const CString& cap, bool state) override
     {
         return cap.Equals(PlaybackCap) || cap.Equals(EchoMessageCap);
     }
 
-    virtual EModRet OnChanBufferStarting(CChan& chan, CClient& client)
+    EModRet OnChanBufferStarting(CChan& chan, CClient& client) override
     {
         if (!m_play && client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
 
-    virtual EModRet OnChanBufferPlayLine(CChan& chan, CClient& client, CString& line)
+    EModRet OnChanBufferPlayLine(CChan& chan, CClient& client, CString& line) override
     {
         if (!m_play && client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
 
-    virtual EModRet OnChanBufferEnding(CChan& chan, CClient& client)
+    EModRet OnChanBufferEnding(CChan& chan, CClient& client) override
     {
         if (!m_play && client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
         return CONTINUE;
     }
 
-    virtual EModRet OnPrivBufferPlayLine(CClient& client, CString& line)
+    EModRet OnPrivBufferPlayLine(CClient& client, CString& line) override
     {
         if (!m_play && client.IsCapEnabled(PlaybackCap))
             return HALTCORE;
@@ -108,7 +108,7 @@ public:
         }
     }
 
-    virtual EModRet OnSendToClient(CString& line, CClient& client)
+    EModRet OnSendToClient(CString& line, CClient& client) override
     {
         if (client.IsAttached() && client.IsCapEnabled(PlaybackCap) && !line.Token(0).Equals("CAP")) {
             MCString tags = CUtils::GetMessageTags(line);
@@ -121,17 +121,17 @@ public:
         return CONTINUE;
     }
 
-    virtual EModRet OnUserMsg(CString& target, CString& message)
+    EModRet OnUserMsg(CString& target, CString& message) override
     {
         return EchoMessage("PRIVMSG " + target + " :" + message);
     }
 
-    virtual EModRet OnUserNotice(CString& target, CString& message)
+    EModRet OnUserNotice(CString& target, CString& message) override
     {
         return EchoMessage("NOTICE " + target + " :" + message);
     }
 
-    virtual EModRet OnUserAction(CString& target, CString& message)
+    EModRet OnUserAction(CString& target, CString& message) override
     {
         return EchoMessage("PRIVMSG " + target + " :\001 ACTION" + message + "\001");
     }
