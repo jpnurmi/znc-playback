@@ -51,14 +51,7 @@ following command syntax:
 Where the command argument is a comma-separated list of channels (also
 supports wildcards). 
 
-See also http://wiki.znc.in/Query_buffers.
-
-### Supported IRC clients
-
-* [Textual](http://textualapp.com) IRC client for Mac OS X
-* [Communi](https://github.com/communi/communi-desktop) for Mac OS X, Linux and Windows
-* [Communi for SailfishOS](https://github.com/communi/communi-sailfish)
-* WIP: [HexChat](http://hexchat.github.io) (https://github.com/hexchat/hexchat/issues/1109)
+See also http://wiki.znc.in/Query_buffers and http://wiki.znc.in/Playback.
 
 ### Contact
 
