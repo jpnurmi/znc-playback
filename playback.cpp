@@ -133,7 +133,7 @@ public:
 
     EModRet OnUserAction(CString& target, CString& message) override
     {
-        return EchoMessage("PRIVMSG " + target + " :\001 ACTION" + message + "\001");
+        return EchoMessage("PRIVMSG " + target + " :\001ACTION " + message + "\001");
     }
 
 private:
