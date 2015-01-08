@@ -75,10 +75,10 @@ public:
         const CString arg = line.Token(1);
         if (arg.empty() || !line.Token(2).empty())
             return;
-        std::vector<CChan*> chans = FindChans(GetNetwork(), arg);
+        std::vector<CChan*> chans = FindChans(arg);
         for (CChan* chan : chans)
             chan->ClearBuffer();
-        std::vector<CQuery*> queries = FindQueries(GetNetwork(), arg);
+        std::vector<CQuery*> queries = FindQueries(arg);
         for (CQuery* query : queries)
             query->ClearBuffer();
     }
@@ -90,7 +90,7 @@ public:
         if (arg.empty() || !line.Token(3).empty())
             return;
         double timestamp = line.Token(2).ToDouble();
-        std::vector<CChan*> chans = FindChans(GetNetwork(), arg);
+        std::vector<CChan*> chans = FindChans(arg);
         for (CChan* chan : chans) {
             if (chan->IsOn() && !chan->IsDetached()) {
                 CBuffer lines = GetLines(chan->GetBuffer(), timestamp);
@@ -99,7 +99,7 @@ public:
                 m_play = false;
             }
         }
-        std::vector<CQuery*> queries = FindQueries(GetNetwork(), arg);
+        std::vector<CQuery*> queries = FindQueries(arg);
         for (CQuery* query : queries) {
             CBuffer lines = GetLines(query->GetBuffer(), timestamp);
             m_play = true;
@@ -180,9 +180,10 @@ private:
         return tv;
     }
 
-    static std::vector<CChan*> FindChans(CIRCNetwork* network, const CString& arg)
+    std::vector<CChan*> FindChans(const CString& arg) const
     {
         std::vector<CChan*> chans;
+        CIRCNetwork* network = GetNetwork();
         if (network) {
             VCString vargs;
             arg.Split(",", vargs, false);
@@ -195,9 +196,10 @@ private:
         return chans;
     }
 
-    static std::vector<CQuery*> FindQueries(CIRCNetwork* network, const CString& arg)
+    std::vector<CQuery*> FindQueries(const CString& arg) const
     {
         std::vector<CQuery*> queries;
+        CIRCNetwork* network = GetNetwork();
         if (network) {
             VCString vargs;
             arg.Split(",", vargs, false);
