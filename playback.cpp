@@ -28,6 +28,7 @@ public:
         AddHelpCommand();
         AddCommand("Clear", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ClearCommand), "<buffer(s)>", "Clears playback for given buffers.");
         AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<buffer(s)> [timestamp]", "Sends playback for given buffers.");
+        AddCommand("List", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ListCommand), "[buffer(s)]", "Lists available/matching buffers.");
     }
 
     void OnClientCapLs(CClient* client, SCString& caps) override
@@ -105,6 +106,34 @@ public:
             m_play = true;
             query->SendBuffer(GetClient(), lines);
             m_play = false;
+        }
+    }
+
+    void ListCommand(const CString& line)
+    {
+        // LIST [buffer(s)]
+        CString arg = line.Token(1);
+        if (arg.empty())
+            arg = "*";
+        std::vector<CChan*> chans = FindChans(arg);
+        for (CChan* chan : chans) {
+            if (chan->IsOn() && !chan->IsDetached()) {
+                CBuffer buffer = chan->GetBuffer();
+                if (!buffer.IsEmpty()) {
+                    timeval from = UniversalTime(buffer.GetBufLine(0).GetTime());
+                    timeval to = UniversalTime(buffer.GetBufLine(buffer.Size() - 1).GetTime());
+                    PutModule(chan->GetName() + " " + CString(Timestamp(from)) + " " + CString(Timestamp(to)));
+                }
+            }
+        }
+        std::vector<CQuery*> queries = FindQueries(arg);
+        for (CQuery* query : queries) {
+            CBuffer buffer = query->GetBuffer();
+            if (!buffer.IsEmpty()) {
+                timeval from = UniversalTime(buffer.GetBufLine(0).GetTime());
+                timeval to = UniversalTime(buffer.GetBufLine(buffer.Size() - 1).GetTime());
+                PutModule(query->GetName() + " " + CString(Timestamp(from)) + " " + CString(Timestamp(to)));
+            }
         }
     }
 
