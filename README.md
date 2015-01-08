@@ -5,8 +5,8 @@ An advanced playback module for ZNC
 
 The advanced playback module for ZNC makes it possible for IRC clients
 to avoid undesired repetitive buffer playback. IRC clients may request
-the module to send a partial buffer playback starting from a certain
-point of time.
+the module to send a partial buffer playback starting from and ending
+to a certain point of time.
 
 ### Persistent buffers
 
@@ -31,25 +31,30 @@ In order for an IRC client to support advanced playback, it should request
 the `znc.in/playback` capability and keep track of the latest server time
 of received messages. The syntax for a buffer playback request is:
 
-    /msg *playback PLAY <#chan(s)> [<timestamp>]
+    /msg *playback PLAY <buffer(s)> [from] [to]
 
 Where the first argument is a comma-separated list of channels (supports
-wildcards), and an optional second argument is number of seconds elapsed
+wildcards), and optional last two arguments are number of seconds elapsed
 since _January 1, 1970_.
 
-When the IRC client connects to ZNC, it should request the module to send
-a buffer playback for all channels, starting from *0* (first connect) or
-the the timestamp of the latest received message (consecutive reconnects).
+When a client connects to ZNC, it should request the module to play all
+buffers, starting from *0* (first connect) or the the timestamp of the
+latest received message (consecutive reconnects).
 
     /msg *playback PLAY * 0
 
 It is also possible to selectively clear playback buffers using the
 following command syntax:
 
-    /msg *playback CLEAR <#chan(s)>
+    /msg *playback CLEAR <buffer(s)>
 
-Where the command argument is a comma-separated list of channels (also
-supports wildcards). 
+If a client wants to list available buffers, it can use the following
+command syntax:
+
+    /msg *playback LIST [buffer(s)]
+
+The module outputs a list of available/matching buffers, one per line,
+each followed by the first and last timestamp for the respective buffer.
 
 See also http://wiki.znc.in/Query_buffers and http://wiki.znc.in/Playback.
 
