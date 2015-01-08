@@ -27,7 +27,7 @@ public:
         m_play = false;
         AddHelpCommand();
         AddCommand("Clear", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ClearCommand), "<buffer(s)>", "Clears playback for given buffers.");
-        AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<buffer(s)> [timestamp]", "Sends playback for given buffers.");
+        AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<buffer(s)> [from] [to]", "Sends playback for given buffers.");
         AddCommand("List", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ListCommand), "[buffer(s)]", "Lists available/matching buffers.");
     }
 
@@ -86,15 +86,18 @@ public:
 
     void PlayCommand(const CString& line)
     {
-        // PLAY <buffer(s)> [timestamp]
+        // PLAY <buffer(s)> [from] [to]
         const CString arg = line.Token(1);
-        if (arg.empty() || !line.Token(3).empty())
+        if (arg.empty() || !line.Token(4).empty())
             return;
-        double timestamp = line.Token(2).ToDouble();
+        double from = line.Token(2).ToDouble();
+        double to = DBL_MAX;
+        if (!line.Token(3).empty())
+            to = line.Token(3).ToDouble();
         std::vector<CChan*> chans = FindChans(arg);
         for (CChan* chan : chans) {
             if (chan->IsOn() && !chan->IsDetached()) {
-                CBuffer lines = GetLines(chan->GetBuffer(), timestamp);
+                CBuffer lines = GetLines(chan->GetBuffer(), from, to);
                 m_play = true;
                 chan->SendBuffer(GetClient(), lines);
                 m_play = false;
@@ -102,7 +105,7 @@ public:
         }
         std::vector<CQuery*> queries = FindQueries(arg);
         for (CQuery* query : queries) {
-            CBuffer lines = GetLines(query->GetBuffer(), timestamp);
+            CBuffer lines = GetLines(query->GetBuffer(), from, to);
             m_play = true;
             query->SendBuffer(GetClient(), lines);
             m_play = false;
@@ -246,13 +249,13 @@ private:
         return queries;
     }
 
-    static CBuffer GetLines(const CBuffer& buffer, double timestamp)
+    static CBuffer GetLines(const CBuffer& buffer, double from, double to)
     {
         CBuffer lines(buffer.Size());
         for (size_t i = 0; i < buffer.Size(); ++i) {
             const CBufLine& line = buffer.GetBufLine(i);
             timeval tv = UniversalTime(line.GetTime());
-            if (timestamp < Timestamp(tv))
+            if (from < Timestamp(tv) && to >= Timestamp(tv))
                 lines.AddLine(line.GetFormat(), line.GetText(), &tv);
         }
         return lines;
