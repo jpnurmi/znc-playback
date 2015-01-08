@@ -152,6 +152,11 @@ private:
         return CONTINUE;
     }
 
+    static double Timestamp(timeval tv)
+    {
+        return tv.tv_sec + tv.tv_usec / 1000000.0;
+    }
+
     static timeval LocalTime()
     {
         timeval tv;
@@ -218,7 +223,7 @@ private:
         for (size_t i = 0; i < buffer.Size(); ++i) {
             const CBufLine& line = buffer.GetBufLine(i);
             timeval tv = UniversalTime(line.GetTime());
-            if (timestamp < tv.tv_sec + tv.tv_usec / 1000000.0)
+            if (timestamp < Timestamp(tv))
                 lines.AddLine(line.GetFormat(), line.GetText(), &tv);
         }
         return lines;
