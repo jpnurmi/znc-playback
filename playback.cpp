@@ -15,6 +15,7 @@
 #include <znc/Chan.h>
 #include <znc/znc.h>
 #include <sys/time.h>
+#include <cfloat>
 
 static const char* PlaybackCap = "znc.in/playback";
 static const char* EchoMessageCap = "znc.in/echo-message";
