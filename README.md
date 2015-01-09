@@ -18,9 +18,9 @@ Either uncheck *Auto Clear Chan Buffer* and *Auto Clear Query Buffer*
 ### Message tags
 
 The module implementation is based on the IRC v3.2 message tags [1] and
-server time [2] extensions. The module injects a server time tag to each
-message sent from ZNC to an IRC client that has requested the
-`znc.in/playback` capability.
+server time [2] extensions. The module injects a server time tag (in
+millisecond precision) to each message sent from ZNC to an IRC client
+that has requested the `znc.in/playback` capability.
 
 - [1] http://ircv3.org/specification/message-tags-3.2
 - [2] http://ircv3.org/extensions/server-time-3.2
@@ -34,10 +34,10 @@ of received messages. The syntax for a buffer playback request is:
     /msg *playback PLAY <buffer(s)> [from] [to]
 
 Where the first argument is a comma-separated list of channels (supports
-wildcards), and optional last two arguments are number of seconds elapsed
-since _January 1, 1970_.
+wildcards), and optional last two arguments are number of seconds (floating
+point for millisecond precision) elapsed since _January 1, 1970_.
 
-When a client connects to ZNC, it should request the module to play all
+When a client connects to ZNC, it may request the module to play all
 buffers, starting from *0* (first connect) or the the timestamp of the
 latest received message (consecutive reconnects).
 
