@@ -30,6 +30,7 @@ public:
         AddCommand("Clear", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ClearCommand), "<buffer(s)>", "Clears playback for given buffers.");
         AddCommand("Play", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::PlayCommand), "<buffer(s)> [from] [to]", "Sends playback for given buffers.");
         AddCommand("List", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::ListCommand), "[buffer(s)]", "Lists available/matching buffers.");
+        AddCommand("Limit", static_cast<CModCommand::ModCmdFunc>(&CPlaybackMod::LimitCommand), "<client> [limit]", "Get/set the buffer limit (<= 0 to clear) for the given client.");
     }
 
     void OnClientCapLs(CClient* client, SCString& caps) override
@@ -95,10 +96,13 @@ public:
         double to = DBL_MAX;
         if (!line.Token(3).empty())
             to = line.Token(3).ToDouble();
+        int limit = -1;
+        if (CClient* client = GetClient())
+            limit = GetLimit(client->GetIdentifier());
         std::vector<CChan*> chans = FindChans(arg);
         for (CChan* chan : chans) {
             if (chan->IsOn() && !chan->IsDetached()) {
-                CBuffer lines = GetLines(chan->GetBuffer(), from, to);
+                CBuffer lines = GetLines(chan->GetBuffer(), from, to, limit);
                 m_play = true;
                 chan->SendBuffer(GetClient(), lines);
                 m_play = false;
@@ -106,7 +110,7 @@ public:
         }
         std::vector<CQuery*> queries = FindQueries(arg);
         for (CQuery* query : queries) {
-            CBuffer lines = GetLines(query->GetBuffer(), from, to);
+            CBuffer lines = GetLines(query->GetBuffer(), from, to, limit);
             m_play = true;
             query->SendBuffer(GetClient(), lines);
             m_play = false;
@@ -139,6 +143,26 @@ public:
                 PutModule(query->GetName() + " " + CString(Timestamp(from)) + " " + CString(Timestamp(to)));
             }
         }
+    }
+
+    void LimitCommand(const CString& line)
+    {
+        // LIMIT <client> [limit]
+        const CString client = line.Token(1);
+        if (client.empty()) {
+            PutModule("Usage: LIMIT <client> [limit]");
+            return;
+        }
+        const CString arg = line.Token(2);
+        int limit = GetLimit(client);
+        if (!arg.empty()) {
+            limit = arg.ToInt();
+            SetLimit(client, limit);
+        }
+        if (limit <= 0)
+            PutModule(client + " buffer limit: -");
+        else
+            PutModule(client + " buffer limit: " + CString(limit));
     }
 
     EModRet OnSendToClient(CString& line, CClient& client) override
@@ -250,7 +274,20 @@ private:
         return queries;
     }
 
-    static CBuffer GetLines(const CBuffer& buffer, double from, double to)
+    int GetLimit(const CString& client) const
+    {
+        return GetNV(client).ToInt();
+    }
+
+    void SetLimit(const CString& client, int limit)
+    {
+        if (limit > 0)
+            SetNV(client, CString(limit));
+        else
+            DelNV(client);
+    }
+
+    static CBuffer GetLines(const CBuffer& buffer, double from, double to, int limit)
     {
         CBuffer lines(buffer.Size());
         for (size_t i = 0; i < buffer.Size(); ++i) {
@@ -259,6 +296,8 @@ private:
             if (from < Timestamp(tv) && to >= Timestamp(tv))
                 lines.AddLine(line.GetFormat(), line.GetText(), &tv);
         }
+        if (limit > 0)
+            lines.SetLineCount(limit);
         return lines;
     }
 
