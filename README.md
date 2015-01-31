@@ -58,6 +58,27 @@ each followed by the first and last timestamp for the respective buffer.
 
 See also http://wiki.znc.in/Query_buffers and http://wiki.znc.in/Playback.
 
+### Limits
+
+The module also allows configuring client specific buffer limits for
+identified clients, using the following command syntax:
+
+    /msg *playback LIMIT <client> [limit]
+
+A limit of less or equal to 0 clears the limit. Notice that the limit
+cannot exceed the limit set in the ZNC configuration, but can be used
+to limit the playback for eg. mobile clients.
+
+### Client identifiers
+
+ZNC supports passing a client identifier in the password:
+
+    username@identifier/network:password
+
+or in the username:
+
+    username@identifier/network
+
 ### Contact
 
 Got questions? Contact jpnurmi@gmail.com or *jpnurmi* on Freenode.
