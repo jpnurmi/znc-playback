@@ -18,7 +18,6 @@
 #include <cfloat>
 
 static const char* PlaybackCap = "znc.in/playback";
-static const char* EchoMessageCap = "znc.in/echo-message";
 
 class CPlaybackMod : public CModule
 {
@@ -36,12 +35,11 @@ public:
     void OnClientCapLs(CClient* client, SCString& caps) override
     {
         caps.insert(PlaybackCap);
-        caps.insert(EchoMessageCap);
     }
 
     bool IsClientCapSupported(CClient* client, const CString& cap, bool state) override
     {
-        return cap.Equals(PlaybackCap) || cap.Equals(EchoMessageCap);
+        return cap.Equals(PlaybackCap);
     }
 
     EModRet OnChanBufferStarting(CChan& chan, CClient& client) override
@@ -178,37 +176,7 @@ public:
         return CONTINUE;
     }
 
-    EModRet OnUserMsg(CString& target, CString& message) override
-    {
-        return EchoMessage("PRIVMSG " + target + " :" + message);
-    }
-
-    EModRet OnUserNotice(CString& target, CString& message) override
-    {
-        return EchoMessage("NOTICE " + target + " :" + message);
-    }
-
-    EModRet OnUserAction(CString& target, CString& message) override
-    {
-        return EchoMessage("PRIVMSG " + target + " :\001ACTION " + message + "\001");
-    }
-
 private:
-    EModRet EchoMessage(CString message)
-    {
-        CClient* client = GetClient();
-        if (client && client->IsCapEnabled(EchoMessageCap)) {
-            message.insert(0, ":" + client->GetNickMask() + " ");
-            if (client->HasServerTime()) {
-                MCString tags = CUtils::GetMessageTags(message);
-                tags["time"] = CUtils::FormatServerTime(LocalTime());
-                CUtils::SetMessageTags(message, tags);
-            }
-            client->PutClient(message);
-        }
-        return CONTINUE;
-    }
-
     static double Timestamp(timeval tv)
     {
         return tv.tv_sec + tv.tv_usec / 1000000.0;
