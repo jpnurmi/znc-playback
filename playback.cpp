@@ -22,8 +22,13 @@
 #include <znc/Query.h>
 #include <znc/Chan.h>
 #include <znc/znc.h>
+#include <znc/version.h>
 #include <sys/time.h>
 #include <cfloat>
+
+#if (VERSION_MAJOR < 1) || (VERSION_MAJOR == 1 && VERSION_MINOR < 6)
+#error The playback module requires the ZNC version 1.6.0 or later.
+#endif
 
 static const char* PlaybackCap = "znc.in/playback";
 
