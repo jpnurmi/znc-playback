@@ -27,7 +27,7 @@
 #include <cfloat>
 
 #if (VERSION_MAJOR < 1) || (VERSION_MAJOR == 1 && VERSION_MINOR < 6)
-#error The playback module requires the ZNC version 1.6.0 or later.
+#error The playback module requires ZNC version 1.6.0 or later.
 #endif
 
 static const char* PlaybackCap = "znc.in/playback";
